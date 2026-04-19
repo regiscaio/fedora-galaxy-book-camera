@@ -1,9 +1,13 @@
 # Galaxy Book Camera
 
-`Galaxy Book Camera` é um aplicativo de câmera nativo para Fedora em notebooks
-Samsung Galaxy Book, com foco atual no **Galaxy Book4 Ultra**. O app usa
-`libcamera` diretamente, tem interface GNOME com `GTK4` e `libadwaita`, e foi
-pensado para funcionar junto do driver empacotado em
+<p align="center">
+  <img src="assets/galaxybook-camera.svg" alt="Ícone do Galaxy Book Camera" width="112">
+</p>
+
+`Galaxy Book Camera` é um app de câmera para Fedora em notebooks Samsung
+Galaxy Book, com foco atual no **Galaxy Book4 Ultra**. O app usa `libcamera`
+diretamente, tem UI nativa do GNOME com `GTK4` e `libadwaita`, e foi pensado
+para funcionar junto do driver empacotado em
 [`fedora-galaxy-book-ov02c10`](https://github.com/regiscaio/fedora-galaxy-book-ov02c10).
 
 Este repositório cobre apenas o **lado userspace**: interface, captura de
@@ -16,7 +20,7 @@ No estado validado em abril de 2026, o app já cobre o fluxo principal de câmer
 no Galaxy Book4 Ultra:
 
 - preview direto via `libcamera`;
-- foto e vídeo com interface GNOME nativa;
+- foto e vídeo com UI nativa do GNOME;
 - zoom exposto no dock principal;
 - tuning dedicado do sensor `ov02c10` para reduzir o fallback totalmente
   `uncalibrated` do `libcamera`;
@@ -25,6 +29,33 @@ no Galaxy Book4 Ultra:
 O fluxo para navegador, Meet, Discord, Teams e outros apps WebRTC continua
 dependendo do setup do host, por isso esse caminho segue documentado e
 automatizado no `Galaxy Book Setup`.
+
+## Por que existe um app dedicado
+
+O app nativo de câmera do GNOME foi uma referência importante de interface e de
+integração com o desktop, mas ele não resolve sozinho o caso específico do
+Galaxy Book4 Ultra.
+
+Neste hardware, a webcam depende de uma combinação mais sensível entre:
+
+- driver `ov02c10` fora do caminho in-tree puro do kernel;
+- stack Intel IPU6;
+- `libcamera`;
+- bridge para navegador e comunicadores quando necessário.
+
+Na prática, o caminho genérico do desktop nem sempre era o melhor lugar para
+validar o sensor, o preview e os ajustes específicos desse notebook. O
+`Galaxy Book Camera` existe justamente para:
+
+- falar diretamente com o `libcamera` no fluxo principal da câmera;
+- carregar tuning próprio do sensor `ov02c10`;
+- expor a interface e os controles que fizeram sentido para esse hardware;
+- separar o uso diário da câmera do fluxo de reparo, diagnóstico e bridge,
+  que ficou concentrado no `Galaxy Book Setup`.
+
+Em outras palavras: o objetivo não foi “substituir o app nativo do Fedora por
+gosto”, e sim criar um caminho estável e controlável para um hardware que
+precisou de solução dedicada.
 
 ## Escopo
 
@@ -138,7 +169,7 @@ Comportamento atual:
 
 ## Limitações conhecidas
 
-- O foco deste repositório é o app nativo de câmera. A visibilidade da câmera
+- O foco deste repositório é o app de câmera com UI nativa do GNOME. A visibilidade da câmera
   em apps como Snapshot, navegadores, Meet, Teams ou Discord depende do stack
   do host (`PipeWire`, `WirePlumber`, `libcamera`, `xdg-desktop-portal`) e não
   é resolvida apenas por este pacote. Para esse cenário, o fluxo recomendado é
