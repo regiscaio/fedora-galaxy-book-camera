@@ -1,0 +1,12 @@
+/target/
+/dist/
+/vendor/
+/.cargo/
+/.direnv/
+/.rpmbuild/
+
+*.log
+*.rpm
+*.src.rpm
+*.tmp
+*~

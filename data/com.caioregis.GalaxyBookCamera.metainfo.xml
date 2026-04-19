@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.caioregis.GalaxyBookCamera</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>NOASSERTION</project_license>
+  <name>Galaxy Book Camera</name>
+  <summary>Native camera app for Fedora on Galaxy Book notebooks</summary>
+  <developer id="com.caioregis">
+    <name>Caio Régis</name>
+  </developer>
+  <launchable type="desktop-id">com.caioregis.GalaxyBookCamera.desktop</launchable>
+  <url type="homepage">https://caioregis.com</url>
+  <url type="bugtracker">https://github.com/regiscaio/fedora-galaxy-book-camera/issues</url>
+  <description>
+    <p>
+      Galaxy Book Camera is a native GTK4 and libadwaita camera app for Fedora on Galaxy Book
+      notebooks. It uses libcamera for capture, supports photo and video workflows, and includes
+      manual tuning controls aimed at the Galaxy Book4 Ultra hardware.
+    </p>
+  </description>
+  <content_rating type="oars-1.1"/>
+</component>

@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: CC0-1.0
+%YAML 1.1
+---
+version: 1
+algorithms:
+  - BlackLevel:
+  - Awb:
+  # Conservative starting point for the OV02C10 on Galaxy Book.
+  # The simple IPA falls back to an uncalibrated pipeline by default,
+  # which leaves the app noticeably flatter and more magenta than the
+  # system-exposed Intel MIPI Camera path. These CCMs intentionally stay
+  # mild so the app gets a more natural colour balance without crushing
+  # the stronger detail that direct libcamera capture preserves.
+  - Ccm:
+      ccms:
+        - ct: 2800
+          ccm: [ 1.73, -0.55, -0.18,
+                 -0.18, 1.45, -0.27,
+                  0.01, -0.63, 1.62 ]
+        - ct: 4500
+          ccm: [ 1.45, -0.33, -0.12,
+                 -0.13, 1.29, -0.16,
+                 -0.01, -0.43, 1.44 ]
+        - ct: 6500
+          ccm: [ 1.27, -0.21, -0.06,
+                 -0.09, 1.21, -0.12,
+                 -0.01, -0.28, 1.29 ]
+  - Adjust:
+  - Agc:
+...

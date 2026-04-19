@@ -1,0 +1,11 @@
+[package]
+name = "galaxybook-camera"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4.42", default-features = false, features = ["clock", "std"] }
+image = { version = "0.25.8", default-features = false, features = ["jpeg"] }
+gtk = { package = "gtk4", version = "0.10", features = ["v4_10"] }
+libcamera = "0.7.0"
+libadwaita = { version = "0.8", features = ["v1_5"] }
