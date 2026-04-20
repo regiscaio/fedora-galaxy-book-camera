@@ -154,12 +154,14 @@ i18n-extract:
 		--keyword=trf \
 		--keyword=trn:1,2 \
 		-o "$(POT_FILE)" \
-		$(I18N_SOURCES)
+		$(I18N_SOURCES) \
+		2> >(sed '/^vc-mtime:/d' >&2)
 
 i18n-update: i18n-extract
 	@set -euo pipefail; \
 	for lang in $(PO_LANGS); do \
-		msgmerge --update --backup=none "po/$$lang.po" "$(POT_FILE)"; \
+		msgmerge --update --backup=none "po/$$lang.po" "$(POT_FILE)" \
+			2> >(sed '/^vc-mtime:/d' >&2); \
 	done
 
 i18n-validate:

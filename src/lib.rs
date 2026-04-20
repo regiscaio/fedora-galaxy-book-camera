@@ -99,7 +99,10 @@ fn resolution_option(width: u32, height: u32) -> ResolutionOption {
 }
 
 fn derived_preview_zoom_options() -> Vec<PreviewZoomOption> {
-    let options = preview_resolution_options();
+    derive_preview_zoom_options_from(preview_resolution_options())
+}
+
+fn derive_preview_zoom_options_from(options: &[ResolutionOption]) -> Vec<PreviewZoomOption> {
     let Some(base_option) = options.first() else {
         return Vec::new();
     };
@@ -659,7 +662,8 @@ mod tests {
 
     #[test]
     fn preview_zoom_options_start_with_one_x() {
-        let zoom_options = preview_zoom_options();
+        let resolution_options = fallback_preview_resolution_options();
+        let zoom_options = derive_preview_zoom_options_from(&resolution_options);
         assert_eq!(zoom_options.len(), 5);
         assert_eq!(zoom_options[0].label, "1x");
         assert_eq!(zoom_options[1].label, "2x");
