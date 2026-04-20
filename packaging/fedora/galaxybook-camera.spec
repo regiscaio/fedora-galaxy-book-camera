@@ -2,7 +2,7 @@
 
 Name:           galaxybook-camera
 Version:        1.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Native libcamera camera app for Galaxy Book on Fedora
 
 License:        NOASSERTION
@@ -22,7 +22,7 @@ BuildRequires:  pkgconfig(libcamera)
 BuildRequires:  rust
 
 Requires:       (ffmpeg-free or ffmpeg)
-Requires:       akmod-galaxybook-ov02c10 >= 0.1.0
+Requires:       akmod-galaxybook-ov02c10 >= 1.0.0
 
 %description
 Galaxy Book Camera is a native GTK4 and libadwaita camera app for Fedora on
@@ -61,22 +61,8 @@ cargo --offline test --locked --lib --bin galaxybook-camera
 %{_datadir}/metainfo/%{app_id}.metainfo.xml
 
 %changelog
+* Mon Apr 20 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-2
+- Improve color neutrality in deep shadows and highlight extremes
+
 * Sun Apr 19 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-1
 - Start the stable RPM line at 1.0.0
-
-* Sat Apr 18 2026 Caio Régis <regiscaio@users.noreply.github.com> - 0.1.0-5
-- Use the native Snapshot-style countdown icon
-
-* Sat Apr 18 2026 Caio Régis <regiscaio@users.noreply.github.com> - 0.1.0-4
-- Require the dedicated Galaxy Book OV02C10 driver package
-
-* Sat Apr 18 2026 Caio Régis <regiscaio@users.noreply.github.com> - 0.1.0-3
-- Add native-style 3s and 10s countdown for photo and video start
-- Place countdown control beside composition guide in the header bar
-
-* Sat Apr 18 2026 Caio Régis <regiscaio@users.noreply.github.com> - 0.1.0-2
-- Use native Adwaita grid icon for composition guide
-- Drop packaged custom grid symbolic icon
-
-* Sat Apr 18 2026 Caio Régis <regiscaio@users.noreply.github.com> - 0.1.0-1
-- Initial RPM packaging

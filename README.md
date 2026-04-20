@@ -194,6 +194,9 @@ Comportamento atual:
 - o preset `Natural` e o baseline padrão usam um ajuste leve e calibrado para
   aproximar a cor do caminho de webcam do sistema sem perder o detalhe do
   `libcamera` direto.
+- o pós-processamento do preview e da captura neutraliza parte dos casts verdes
+  e azulados mais agressivos em sombras profundas e extremos de luz, sem
+  abandonar o caráter mais cru do pipeline direto.
 - o zoom do preview usa um seletor inline no dock principal, mantendo o app
   mais próximo da lógica de câmera mobile sem abandonar o layout GNOME.
 

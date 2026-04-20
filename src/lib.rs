@@ -409,7 +409,7 @@ impl Default for CameraConfig {
             saturation: 1.05,
             hue: 0.00,
             temperature: 0.04,
-            tint: -0.03,
+            tint: 0.00,
             red_gain: 1.00,
             green_gain: 1.00,
             blue_gain: 1.00,
@@ -561,7 +561,7 @@ impl CameraConfig {
                 self.saturation = 1.05;
                 self.hue = 0.00;
                 self.temperature = 0.04;
-                self.tint = -0.03;
+                self.tint = 0.00;
                 self.red_gain = 1.00;
                 self.green_gain = 1.00;
                 self.blue_gain = 1.00;
@@ -726,6 +726,7 @@ struct AdjustmentProfile {
     has_lut_adjustments: bool,
     has_brightness_contrast_adjustments: bool,
     has_hue_saturation_adjustments: bool,
+    has_extreme_luma_neutralization: bool,
     brightness_offset: f32,
     contrast: f32,
     saturation: f32,
@@ -775,6 +776,7 @@ impl AdjustmentProfile {
             has_lut_adjustments,
             has_brightness_contrast_adjustments: brightness_offset.abs() > 0.001 || (contrast - 1.0).abs() > 0.001,
             has_hue_saturation_adjustments: (saturation - 1.0).abs() > 0.001 || hue_angle.abs() > 0.001,
+            has_extreme_luma_neutralization: true,
             brightness_offset,
             contrast,
             saturation,
@@ -796,6 +798,7 @@ fn apply_adjustments(frame: &mut OwnedFrame, profile: &AdjustmentProfile) {
     if profile.has_lut_adjustments
         || profile.has_brightness_contrast_adjustments
         || profile.has_hue_saturation_adjustments
+        || profile.has_extreme_luma_neutralization
     {
         for pixel in frame.data.chunks_exact_mut(4) {
             let mut red = if profile.has_lut_adjustments {
@@ -848,6 +851,10 @@ fn apply_adjustments(frame: &mut OwnedFrame, profile: &AdjustmentProfile) {
                 blue = adjust_brightness_contrast(blue, profile.brightness_offset, profile.contrast);
             }
 
+            if profile.has_extreme_luma_neutralization {
+                (red, green, blue) = neutralize_extreme_luma_casts(red, green, blue);
+            }
+
             pixel[0] = red;
             pixel[1] = green;
             pixel[2] = blue;
@@ -867,6 +874,39 @@ fn adjust_brightness_contrast(channel: u8, brightness_offset: f32, contrast: f32
     let normalized = channel as f32 / 255.0;
     let adjusted = ((normalized - 0.5) * contrast + 0.5 + brightness_offset).clamp(0.0, 1.0);
     (adjusted * 255.0).round() as u8
+}
+
+fn smoothstep(edge0: f32, edge1: f32, value: f32) -> f32 {
+    if edge0 == edge1 {
+        return if value < edge0 { 0.0 } else { 1.0 };
+    }
+
+    let normalized = ((value - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
+    normalized * normalized * (3.0 - 2.0 * normalized)
+}
+
+fn neutralize_extreme_luma_casts(red: u8, green: u8, blue: u8) -> (u8, u8, u8) {
+    let red_f = red as f32 / 255.0;
+    let green_f = green as f32 / 255.0;
+    let blue_f = blue as f32 / 255.0;
+
+    let luma = 0.299 * red_f + 0.587 * green_f + 0.114 * blue_f;
+    let shadow_weight = 1.0 - smoothstep(0.03, 0.24, luma);
+    let highlight_weight = smoothstep(0.74, 0.98, luma);
+    let neutralize_amount = shadow_weight * 0.34 + highlight_weight * 0.12;
+
+    if neutralize_amount <= 0.001 {
+        return (red, green, blue);
+    }
+
+    let blend = |channel: f32| -> u8 {
+        (channel + (luma - channel) * neutralize_amount)
+            .mul_add(255.0, 0.0)
+            .clamp(0.0, 255.0)
+            .round() as u8
+    };
+
+    (blend(red_f), blend(green_f), blend(blue_f))
 }
 
 fn apply_sharpen(frame: &mut OwnedFrame, amount: f32) {
@@ -2302,6 +2342,24 @@ mod tests {
     }
 
     #[test]
+    fn deep_shadow_casts_are_neutralized() {
+        let config = neutral_config();
+
+        let original = (18_u8, 36_u8, 24_u8);
+        let mut frame = frame_from_pixels(1, 1, &[original]);
+        let profile = AdjustmentProfile::new(&config);
+        apply_adjustments(&mut frame, &profile);
+
+        let adjusted = rgb_at(&frame, 0, 0);
+        let original_span =
+            original.0.max(original.1).max(original.2) - original.0.min(original.1).min(original.2);
+        let adjusted_span =
+            adjusted.0.max(adjusted.1).max(adjusted.2) - adjusted.0.min(adjusted.1).min(adjusted.2);
+
+        assert!(adjusted_span < original_span);
+    }
+
+    #[test]
     fn sharpness_adjustment_changes_center_pixel() {
         let mut config = neutral_config();
         config.sharpness = 2.0;
@@ -2417,7 +2475,7 @@ mod tests {
         assert_eq!(config.contrast, 1.04);
         assert_eq!(config.saturation, 1.05);
         assert_eq!(config.temperature, 0.04);
-        assert_eq!(config.tint, -0.03);
+        assert_eq!(config.tint, 0.0);
         assert_eq!(config.gamma, 1.0);
         assert_eq!(config.sharpness, 1.0);
         assert_eq!(config.width, Some(1280));
