@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>com.caioregis.GalaxyBookCamera</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>NOASSERTION</project_license>
+  <project_license>GPL-2.0-only</project_license>
   <name>Galaxy Book Camera</name>
   <summary>Native camera app for Fedora on Galaxy Book notebooks</summary>
   <developer id="com.caioregis">

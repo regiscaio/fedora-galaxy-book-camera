@@ -2,10 +2,10 @@
 
 Name:           galaxybook-camera
 Version:        1.0.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Native libcamera camera app for Galaxy Book on Fedora
 
-License:        NOASSERTION
+License:        GPL-2.0-only
 URL:            https://github.com/regiscaio/fedora-galaxy-book-camera
 Source0:        %{name}-%{version}.tar.gz
 
@@ -53,6 +53,7 @@ desktop-file-validate %{app_id}.desktop
 cargo --offline test --locked --lib --bin galaxybook-camera
 
 %files
+%license LICENSE
 %{_bindir}/galaxybook-camera
 %{_datadir}/applications/%{app_id}.desktop
 %{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
@@ -61,6 +62,10 @@ cargo --offline test --locked --lib --bin galaxybook-camera
 %{_datadir}/metainfo/%{app_id}.metainfo.xml
 
 %changelog
+* Mon Apr 20 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-3
+- Add an explicit GPL-2.0-only license to the project and package metadata
+- Add multilingual README variants and language navigation links
+
 * Mon Apr 20 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-2
 - Improve color neutrality in deep shadows and highlight extremes
 

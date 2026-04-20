@@ -1,4 +1,15 @@
-# Galaxy Book Camera
+<p align="center">
+  <img src="assets/galaxybook-camera.svg" alt="Ícone do Galaxy Book Camera" width="112">
+</p>
+
+<h1 align="center">Galaxy Book Camera</h1>
+
+<p align="center">
+  <a href="README.md">🇧🇷 Português</a> ·
+  <a href="README.en.md">🇺🇸 English</a> ·
+  <a href="README.es.md">🇪🇸 Español</a> ·
+  <a href="README.it.md">🇮🇹 Italiano</a>
+</p>
 
 ## Instalação rápida
 
@@ -14,10 +25,6 @@ Se você também quiser o auxiliar gráfico de instalação e diagnóstico:
 ```bash
 sudo dnf install galaxybook-setup
 ```
-
-<p align="center">
-  <img src="assets/galaxybook-camera.svg" alt="Ícone do Galaxy Book Camera" width="112">
-</p>
 
 `Galaxy Book Camera` é um app de câmera para Fedora em notebooks Samsung
 Galaxy Book, com foco atual no **Galaxy Book4 Ultra**. O app usa `libcamera`
@@ -92,13 +99,14 @@ precisou de solução dedicada.
 O projeto entrega:
 
 - preview embutido na janela principal;
-- seletor de zoom no dock principal, com níveis `1x`, `2x`, `3x`, `5x` e `10x`, aberto diretamente do controle `1x`;
+- seletor de zoom no dock principal, com níveis `1x`, `2x`, `3x`, `5x` e `10x`;
 - captura de foto na maior resolução still exposta pela câmera;
 - gravação de vídeo com áudio opcional;
 - tuning dedicado `ov02c10.yaml` para o caminho direto do `libcamera`;
 - contagem regressiva de `3s`, `5s` ou `10s` para foto e início de vídeo;
 - preferências persistidas para imagem e comportamento;
-- zoom do preview exposto na HUD principal, enquanto as preferências ficam focadas em preset, imagem e comportamento;
+- pós-processamento calibrado para reduzir casts verdes e azulados mais
+  agressivos em sombras profundas e extremos de luz;
 - modal `Sobre` nativa em `libadwaita`, com links e seção `Detalhes`;
 - integração com launcher `.desktop`, ícone próprio e janela nativa do GNOME;
 - ajustes como brilho, exposição, contraste, saturação, matiz, temperatura,
@@ -119,10 +127,6 @@ Para o app funcionar neste hardware, o sistema precisa ter:
 - `ffmpeg-free` do Fedora ou `ffmpeg` do RPM Fusion;
 - o driver empacotado em `fedora-galaxy-book-ov02c10`.
 
-O RPM do app declara dependência em:
-
-- `akmod-galaxybook-ov02c10 >= 0.1.0`
-
 Na prática, a instalação mais segura para usuários Fedora é instalar o conjunto
 do driver com `akmod`:
 
@@ -130,6 +134,22 @@ do driver com `akmod`:
 - `akmod-galaxybook-ov02c10`
 
 ## Instalação para usuários
+
+### Via repositório DNF público
+
+O caminho recomendado para usuários finais é instalar pelo repositório público:
+
+```bash
+sudo dnf config-manager addrepo --from-repofile=https://packages.caioregis.com/fedora/caioregis.repo
+sudo dnf install galaxybook-camera akmod-galaxybook-ov02c10
+```
+
+Se você também quiser o fluxo assistido de reparo, validação e webcam para
+navegador:
+
+```bash
+sudo dnf install galaxybook-setup
+```
 
 ### Via RPM local
 
@@ -161,24 +181,6 @@ journalctl -b -k | grep -i ov02c10
 O resultado esperado é o `ov02c10` vindo do módulo gerado pelo `akmods`, não
 da cópia in-tree do kernel.
 
-### Fluxo recomendado para usuários finais
-
-O caminho mais simples hoje é:
-
-1. instalar o driver `ov02c10`;
-2. instalar o `Galaxy Book Câmera`;
-3. usar o `Galaxy Book Setup` para diagnóstico, reparo do stack e exposição da webcam para navegador quando necessário.
-
-Isso é importante porque o app de câmera resolve o uso direto via `libcamera`,
-mas o fluxo para navegador, Meet, Discord, Teams e outros apps WebRTC fica
-centralizado no repositório de setup.
-
-### Via COPR
-
-O projeto foi estruturado para distribuição por **RPM/COPR**. Quando houver um
-repositório COPR publicado, a recomendação é usar esse canal para instalar e
-atualizar os pacotes.
-
 ## Uso
 
 Depois da instalação e do reboot, o app pode ser aberto pelo menu do GNOME com
@@ -188,35 +190,25 @@ Comportamento atual:
 
 - fotos são salvas em `XDG_PICTURES_DIR/Camera`;
 - vídeos são salvos em `XDG_VIDEOS_DIR/Camera`;
-- a câmera é acessada diretamente via `libcamera`, sem depender do Snapshot.
+- a câmera é acessada diretamente via `libcamera`, sem depender do Snapshot;
 - o app injeta um tuning file próprio para o sensor `ov02c10` no `simple IPA`
   do `libcamera`, para evitar o fallback totalmente `uncalibrated`;
 - o preset `Natural` e o baseline padrão usam um ajuste leve e calibrado para
   aproximar a cor do caminho de webcam do sistema sem perder o detalhe do
-  `libcamera` direto.
+  `libcamera` direto;
 - o pós-processamento do preview e da captura neutraliza parte dos casts verdes
   e azulados mais agressivos em sombras profundas e extremos de luz, sem
-  abandonar o caráter mais cru do pipeline direto.
+  abandonar o caráter mais cru do pipeline direto;
 - o zoom do preview usa um seletor inline no dock principal, mantendo o app
   mais próximo da lógica de câmera mobile sem abandonar o layout GNOME.
 
-Comparação prática com o app nativo do Fedora:
-
-- o `Galaxy Book Camera` costuma entregar mais detalhe e um comportamento mais
-  previsível para este hardware;
-- o app nativo do Fedora pode ter cor padrão mais agradável em alguns cenários,
-  porque o caminho do sistema aparece mais processado visualmente;
-- o `Galaxy Book Camera` continua sendo a melhor opção quando a prioridade é
-  controle de imagem, tuning do sensor e consistência no caminho direto via
-  `libcamera`.
-
 ## Limitações conhecidas
 
-- O foco deste repositório é o app de câmera com UI nativa do GNOME. A visibilidade da câmera
-  em apps como Snapshot, navegadores, Meet, Teams ou Discord depende do stack
-  do host (`PipeWire`, `WirePlumber`, `libcamera`, `xdg-desktop-portal`) e não
-  é resolvida apenas por este pacote. Para esse cenário, o fluxo recomendado é
-  usar o `Galaxy Book Setup`.
+- O foco deste repositório é o app de câmera com UI nativa do GNOME. A
+  visibilidade da câmera em apps como Snapshot, navegadores, Meet, Teams ou
+  Discord depende do stack do host (`PipeWire`, `WirePlumber`, `libcamera`,
+  `xdg-desktop-portal`) e não é resolvida apenas por este pacote. Para esse
+  cenário, o fluxo recomendado é usar o `Galaxy Book Setup`.
 - O suporte foi trabalhado e validado principalmente no **Galaxy Book4 Ultra**.
   Outros modelos da linha Galaxy Book podem exigir ajustes adicionais no
   driver, no ACPI ou no pipeline de câmera.
@@ -275,3 +267,8 @@ Arquivos relevantes:
 - spec RPM: [`packaging/fedora/galaxybook-camera.spec`](packaging/fedora/galaxybook-camera.spec)
 - launcher: [`data/com.caioregis.GalaxyBookCamera.desktop`](data/com.caioregis.GalaxyBookCamera.desktop)
 - metadados AppStream: [`data/com.caioregis.GalaxyBookCamera.metainfo.xml`](data/com.caioregis.GalaxyBookCamera.metainfo.xml)
+
+## Licença
+
+Este projeto é distribuído sob a licença **GPL-2.0-only**. Veja o arquivo
+[LICENSE](LICENSE).
