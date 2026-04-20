@@ -7,6 +7,8 @@ pub mod zoom;
 
 pub use about::present_about_dialog;
 pub use controls::{
+    sync_controls_from_state,
+    ControlStateSnapshot,
     refresh_capture_controls,
     refresh_countdown_controls,
     refresh_preview_chrome,

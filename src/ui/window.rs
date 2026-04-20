@@ -35,15 +35,15 @@ use super::{
     build_control_widgets,
     build_sidebar,
     build_zoom_selector,
+    ControlStateSnapshot,
     draw_preview_grid,
     present_about_dialog,
     refresh_capture_controls,
     refresh_countdown_controls,
     refresh_preview_chrome,
     refresh_zoom_selector,
-    selected_audio_index,
     set_zoom_selector_expanded,
-    set_scale_value,
+    sync_controls_from_state,
     ControlWidgets,
 };
 
@@ -674,41 +674,28 @@ impl CameraWindow {
     }
 
     fn sync_controls_from_state(&self) {
-        let state = self.state.borrow();
-        self.syncing_ui.set(true);
+        let snapshot = {
+            let state = self.state.borrow();
+            ControlStateSnapshot {
+                config: state.config.clone(),
+                auto_apply: state.auto_apply,
+                show_grid: state.show_grid,
+                preset_index: state.preset_index,
+                audio_sources: state.audio_sources.clone(),
+            }
+        };
 
-        self.controls.auto_apply_row.set_active(state.auto_apply);
-        self.controls.show_grid_row.set_active(state.show_grid);
-        self.controls.mirror_row.set_active(state.config.mirror);
-        self.controls.record_audio_row.set_active(state.config.record_audio);
-        self.controls
-            .preset_row
-            .set_selected(state.preset_index as u32);
-        self.controls
-            .audio_source_row
-            .set_selected(selected_audio_index(&state.audio_sources, &state.config.audio_source));
-        self.countdown_off_button
-            .set_active(state.config.countdown_seconds == 0);
-        self.countdown_three_button
-            .set_active(state.config.countdown_seconds == 3);
-        self.countdown_ten_button
-            .set_active(state.config.countdown_seconds == 10);
-
-        set_scale_value(&self.controls.brightness_scale, &self.controls.brightness_value, state.config.brightness);
-        set_scale_value(&self.controls.exposure_scale, &self.controls.exposure_value, state.config.exposure_value);
-        set_scale_value(&self.controls.contrast_scale, &self.controls.contrast_value, state.config.contrast);
-        set_scale_value(&self.controls.saturation_scale, &self.controls.saturation_value, state.config.saturation);
-        set_scale_value(&self.controls.hue_scale, &self.controls.hue_value, state.config.hue);
-        set_scale_value(&self.controls.temperature_scale, &self.controls.temperature_value, state.config.temperature);
-        set_scale_value(&self.controls.tint_scale, &self.controls.tint_value, state.config.tint);
-        set_scale_value(&self.controls.red_scale, &self.controls.red_value, state.config.red_gain);
-        set_scale_value(&self.controls.green_scale, &self.controls.green_value, state.config.green_gain);
-        set_scale_value(&self.controls.blue_scale, &self.controls.blue_value, state.config.blue_gain);
-        set_scale_value(&self.controls.gamma_scale, &self.controls.gamma_value, state.config.gamma);
-        set_scale_value(&self.controls.sharpness_scale, &self.controls.sharpness_value, state.config.sharpness);
-        self.refresh_zoom_controls();
-
-        self.syncing_ui.set(false);
+        sync_controls_from_state(
+            &self.controls,
+            &self.countdown_off_button,
+            &self.countdown_three_button,
+            &self.countdown_ten_button,
+            &self.zoom_button,
+            &self.zoom_label,
+            &self.zoom_option_buttons,
+            &self.syncing_ui,
+            &snapshot,
+        );
     }
 
     fn refresh_preview_chrome(&self) {
