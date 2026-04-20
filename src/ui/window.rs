@@ -37,6 +37,9 @@ use super::{
     build_zoom_selector,
     draw_preview_grid,
     present_about_dialog,
+    refresh_capture_controls,
+    refresh_countdown_controls,
+    refresh_preview_chrome,
     refresh_zoom_selector,
     selected_audio_index,
     set_zoom_selector_expanded,
@@ -710,99 +713,37 @@ impl CameraWindow {
 
     fn refresh_preview_chrome(&self) {
         let state = self.state.borrow();
-        self.placeholder
-            .set_visible(!state.preview_active && state.countdown_remaining.is_none());
-        self.grid_overlay.set_visible(state.show_grid);
-        self.preview_button.set_icon_name(if state.preview_active {
-            "media-playback-stop-symbolic"
-        } else {
-            "media-playback-start-symbolic"
-        });
-        self.preview_button.set_tooltip_text(Some(if state.preview_active {
-            "Parar preview"
-        } else {
-            "Iniciar preview"
-        }));
+        refresh_preview_chrome(
+            &self.placeholder,
+            &self.grid_overlay,
+            &self.preview_button,
+            state.preview_active,
+            state.countdown_remaining.is_some(),
+            state.show_grid,
+        );
     }
 
     fn refresh_capture_controls(&self) {
         let state = self.state.borrow();
-        self.photo_mode_button
-            .set_active(state.capture_mode == CaptureMode::Photo);
-        self.video_mode_button
-            .set_active(state.capture_mode == CaptureMode::Video);
-
-        self.photo_mode_button.remove_css_class("camera-mode-button-active");
-        self.video_mode_button.remove_css_class("camera-mode-button-active");
-        self.capture_button.remove_css_class("capture-button-photo");
-        self.capture_button.remove_css_class("capture-button-video");
-        self.capture_button.remove_css_class("capture-button-recording");
-        self.capture_button_glyph.remove_css_class("capture-button-glyph-photo");
-        self.capture_button_glyph.remove_css_class("capture-button-glyph-video");
-        self.capture_button_glyph.remove_css_class("capture-button-glyph-recording");
-
-        match state.capture_mode {
-            CaptureMode::Photo => {
-                self.photo_mode_button.add_css_class("camera-mode-button-active");
-                self.capture_button.add_css_class("capture-button-photo");
-                self.capture_button_glyph
-                    .add_css_class("capture-button-glyph-photo");
-            }
-            CaptureMode::Video if state.is_recording => {
-                self.video_mode_button.add_css_class("camera-mode-button-active");
-                self.capture_button.add_css_class("capture-button-recording");
-                self.capture_button_glyph
-                    .add_css_class("capture-button-glyph-recording");
-            }
-            CaptureMode::Video => {
-                self.video_mode_button.add_css_class("camera-mode-button-active");
-                self.capture_button.add_css_class("capture-button-video");
-                self.capture_button_glyph
-                    .add_css_class("capture-button-glyph-video");
-            }
-        }
-
-        if state.countdown_remaining.is_some() {
-            self.capture_button
-                .set_tooltip_text(Some("Cancelar contagem regressiva"));
-        } else {
-            match state.capture_mode {
-                CaptureMode::Photo => {
-                    self.capture_button.set_tooltip_text(Some("Tirar foto"));
-                }
-                CaptureMode::Video if state.is_recording => {
-                    self.capture_button.set_tooltip_text(Some("Parar gravação"));
-                }
-                CaptureMode::Video => {
-                    self.capture_button.set_tooltip_text(Some("Iniciar gravação"));
-                }
-            }
-        }
+        refresh_capture_controls(
+            &self.photo_mode_button,
+            &self.video_mode_button,
+            &self.capture_button,
+            &self.capture_button_glyph,
+            state.capture_mode,
+            state.is_recording,
+            state.countdown_remaining.is_some(),
+        );
     }
 
     fn refresh_countdown_controls(&self) {
         let state = self.state.borrow();
-        let configured_seconds = normalize_countdown_seconds(state.config.countdown_seconds);
-        let countdown_remaining = state.countdown_remaining;
-
-        if configured_seconds > 0 {
-            self.countdown_button
-                .set_tooltip_text(Some(&format!("Contagem regressiva: {configured_seconds}s")));
-            self.countdown_button
-                .add_css_class("camera-header-toggle-active");
-        } else {
-            self.countdown_button
-                .set_tooltip_text(Some("Contagem regressiva"));
-            self.countdown_button
-                .remove_css_class("camera-header-toggle-active");
-        }
-
-        if let Some(remaining) = countdown_remaining {
-            self.countdown_overlay_label.set_label(&remaining.to_string());
-            self.countdown_overlay_label.set_visible(true);
-        } else {
-            self.countdown_overlay_label.set_visible(false);
-        }
+        refresh_countdown_controls(
+            &self.countdown_button,
+            &self.countdown_overlay_label,
+            normalize_countdown_seconds(state.config.countdown_seconds),
+            state.countdown_remaining,
+        );
     }
 
     fn refresh_zoom_controls(&self) {
