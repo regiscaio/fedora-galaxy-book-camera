@@ -5,9 +5,10 @@ use galaxybook_camera::{
     default_config_path,
     localized_app_name,
     photo_library_dir,
+    tr,
+    trf,
     video_library_dir,
     APP_ID,
-    APP_NAME,
 };
 use gtk::glib;
 use gtk::prelude::*;
@@ -20,7 +21,7 @@ pub fn present_about_dialog(
 ) {
     let app_name = localized_app_name();
     let dialog = adw::Dialog::builder()
-        .title("Sobre")
+        .title(tr("Sobre"))
         .content_width(520)
         .content_height(620)
         .build();
@@ -28,11 +29,11 @@ pub fn present_about_dialog(
     navigation_view.set_animate_transitions(true);
     navigation_view.set_pop_on_escape(true);
 
-    let header_title = adw::WindowTitle::new("Sobre", "");
+    let header_title = adw::WindowTitle::new(&tr("Sobre"), "");
 
     let back_button = gtk::Button::builder()
         .icon_name("go-previous-symbolic")
-        .tooltip_text("Voltar")
+        .tooltip_text(tr("Voltar"))
         .visible(false)
         .build();
     back_button.add_css_class("flat");
@@ -44,7 +45,7 @@ pub fn present_about_dialog(
     let details_subpage = build_about_details_subpage();
     let page = adw::PreferencesPage::builder()
         .name("about")
-        .title("Sobre")
+        .title(tr("Sobre"))
         .build();
 
     let summary_group = adw::PreferencesGroup::new();
@@ -58,30 +59,30 @@ pub fn present_about_dialog(
     author_row.set_activatable(false);
     summary_group.add(&author_row);
 
-    let links_group = adw::PreferencesGroup::builder().title("Projeto").build();
+    let links_group = adw::PreferencesGroup::builder().title(tr("Projeto")).build();
     let website_row = build_uri_row(
         window,
         toast_overlay,
-        "Página da web",
+        &tr("Página da web"),
         "https://caioregis.com",
     );
     let repository_row = build_uri_row(
         window,
         toast_overlay,
-        "Repositório do projeto",
+        &tr("Repositório do projeto"),
         "https://github.com/regiscaio/fedora-galaxy-book-camera",
     );
     let issues_row = build_uri_row(
         window,
         toast_overlay,
-        "Relatar problema",
+        &tr("Relatar problema"),
         "https://github.com/regiscaio/fedora-galaxy-book-camera/issues",
     );
     let details_row = build_suffix_action_row(
-        "Detalhes",
-        "Versão, app ID e caminhos usados pelo app.",
+        &tr("Detalhes"),
+        &tr("Versão, app ID e caminhos usados pelo app."),
         "go-next-symbolic",
-        "Abrir detalhes",
+        &tr("Abrir detalhes"),
         {
             let navigation_view = navigation_view.clone();
             move || {
@@ -103,7 +104,7 @@ pub fn present_about_dialog(
         .min_content_width(0)
         .child(&page)
         .build();
-    let about_page = adw::NavigationPage::with_tag(&about_scroller, "Sobre", "about");
+    let about_page = adw::NavigationPage::with_tag(&about_scroller, &tr("Sobre"), "about");
 
     navigation_view.add(&about_page);
     navigation_view.add(&details_subpage);
@@ -127,7 +128,7 @@ pub fn present_about_dialog(
         let back_button = back_button.clone();
         move |navigation_view| {
             let Some(page) = navigation_view.visible_page() else {
-                header_title.set_title("Sobre");
+                header_title.set_title(&tr("Sobre"));
                 back_button.set_visible(false);
                 return;
             };
@@ -190,7 +191,7 @@ fn build_uri_row(
         title,
         uri,
         "send-to-symbolic",
-        "Abrir link",
+        &tr("Abrir link"),
         move || {
             let launcher = gtk::UriLauncher::new(uri);
             let toast_overlay = toast_overlay.clone();
@@ -199,8 +200,9 @@ fn build_uri_row(
                 None::<&gtk::gio::Cancellable>,
                 move |result| {
                     if let Err(error) = result {
-                        toast_overlay.add_toast(adw::Toast::new(&format!(
-                            "Falha ao abrir o link: {error}"
+                        toast_overlay.add_toast(adw::Toast::new(&trf(
+                            "Falha ao abrir o link: {error}",
+                            &[("error", error.to_string())],
                         )));
                     }
                 },
@@ -240,8 +242,11 @@ fn build_about_summary_row(app_name: &str) -> gtk::ListBoxRow {
 
     let version_label = gtk::Label::new(None);
     version_label.set_markup(&format!(
-        "<span alpha='55%' size='small'>Versão {}</span>",
-        glib::markup_escape_text(env!("CARGO_PKG_VERSION"))
+        "<span alpha='55%' size='small'>{}</span>",
+        glib::markup_escape_text(&trf(
+            "Versão {version}",
+            &[("version", env!("CARGO_PKG_VERSION").to_string())],
+        ))
     ));
     version_label.set_xalign(0.0);
 
@@ -249,9 +254,12 @@ fn build_about_summary_row(app_name: &str) -> gtk::ListBoxRow {
     title_row.append(&version_label);
 
     let description_label = gtk::Label::new(None);
-    description_label.set_markup(
-        "<span alpha='55%' size='small'>Aplicativo de câmera nativo para Fedora no Galaxy Book.</span>",
-    );
+    description_label.set_markup(&format!(
+        "<span alpha='55%' size='small'>{}</span>",
+        glib::markup_escape_text(&tr(
+            "Aplicativo de câmera nativo para Fedora no Galaxy Book.",
+        ))
+    ));
     description_label.set_xalign(0.0);
     description_label.set_wrap(true);
 
@@ -268,19 +276,19 @@ fn build_about_summary_row(app_name: &str) -> gtk::ListBoxRow {
 fn build_about_details_subpage() -> adw::NavigationPage {
     let page = adw::PreferencesPage::builder()
         .name("details")
-        .title("Detalhes")
+        .title(tr("Detalhes"))
         .build();
 
     let app_group = adw::PreferencesGroup::builder()
-        .title("Aplicativo")
-        .description("Identificação pública e técnica do Galaxy Book Câmera.")
+        .title(tr("Aplicativo"))
+        .description(tr("Identificação pública e técnica do Galaxy Book Câmera."))
         .build();
 
     for (title, subtitle) in [
-        ("Nome", APP_NAME.to_string()),
-        ("Versão", env!("CARGO_PKG_VERSION").to_string()),
-        ("App ID", APP_ID.to_string()),
-        ("Desktop ID", format!("{APP_ID}.desktop")),
+        (tr("Nome"), localized_app_name()),
+        (tr("Versão"), env!("CARGO_PKG_VERSION").to_string()),
+        (tr("App ID"), APP_ID.to_string()),
+        (tr("Desktop ID"), format!("{APP_ID}.desktop")),
     ] {
         let row = adw::ActionRow::builder()
             .title(title)
@@ -292,14 +300,14 @@ fn build_about_details_subpage() -> adw::NavigationPage {
     }
 
     let storage_group = adw::PreferencesGroup::builder()
-        .title("Armazenamento")
-        .description("Arquivos locais e diretórios usados pelo aplicativo.")
+        .title(tr("Armazenamento"))
+        .description(tr("Arquivos locais e diretórios usados pelo aplicativo."))
         .build();
 
     for (title, subtitle) in [
-        ("Configuração", default_config_path().display().to_string()),
-        ("Fotos", photo_library_dir().display().to_string()),
-        ("Vídeos", video_library_dir().display().to_string()),
+        (tr("Configuração"), default_config_path().display().to_string()),
+        (tr("Fotos"), photo_library_dir().display().to_string()),
+        (tr("Vídeos"), video_library_dir().display().to_string()),
     ] {
         let row = adw::ActionRow::builder()
             .title(title)
@@ -319,7 +327,7 @@ fn build_about_details_subpage() -> adw::NavigationPage {
         .build();
 
     adw::NavigationPage::builder()
-        .title("Detalhes")
+        .title(tr("Detalhes"))
         .tag("details")
         .child(&scroller)
         .can_pop(true)

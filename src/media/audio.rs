@@ -1,5 +1,7 @@
 use std::process::Command;
 
+use crate::{tr, trf};
+
 #[derive(Clone)]
 pub struct AudioSourceOption {
     pub id: String,
@@ -35,7 +37,7 @@ pub fn detect_audio_sources() -> Vec<AudioSourceOption> {
 fn default_audio_sources() -> Vec<AudioSourceOption> {
     vec![AudioSourceOption {
         id: "default".to_string(),
-        label: "Padrao do sistema".to_string(),
+        label: tr("Padrão do sistema"),
     }]
 }
 
@@ -60,12 +62,15 @@ fn parse_audio_sources(raw: &str) -> Vec<AudioSourceOption> {
         let label = if let (Some(start), Some(end)) = (rest.find('['), rest.rfind(']')) {
             let text = rest[(start + 1)..end].trim();
             if is_default {
-                format!("{text} (padrao atual)")
+                trf(
+                    "{name} (padrão atual)",
+                    &[("name", text.to_string())],
+                )
             } else {
                 text.to_string()
             }
         } else if is_default {
-            format!("{id} (padrao atual)")
+            trf("{name} (padrão atual)", &[("name", id.to_string())])
         } else {
             id.to_string()
         };

@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 use std::sync::{mpsc, mpsc::SyncSender, OnceLock};
 use std::thread;
 
-use crate::{OwnedFrame, WorkerEvent, DRM_RENDER_NODES, PREVIEW_FRAMERATE};
+use crate::{tr, trf, OwnedFrame, WorkerEvent, DRM_RENDER_NODES, PREVIEW_FRAMERATE};
 
 static VIDEO_ENCODER_BACKEND: OnceLock<VideoEncoderBackend> = OnceLock::new();
 
@@ -17,12 +17,12 @@ pub enum VideoEncoderBackend {
 }
 
 impl VideoEncoderBackend {
-    pub fn ui_label(self) -> &'static str {
+    pub fn ui_label(self) -> String {
         match self {
-            Self::NvidiaNvenc => "GPU NVIDIA (NVENC)",
-            Self::IntelQsv => "hardware Intel (Quick Sync)",
-            Self::Vaapi => "hardware VA-API",
-            Self::CpuX264 => "CPU (libx264)",
+            Self::NvidiaNvenc => tr("GPU NVIDIA (NVENC)"),
+            Self::IntelQsv => tr("hardware Intel (Quick Sync)"),
+            Self::Vaapi => tr("hardware VA-API"),
+            Self::CpuX264 => tr("CPU (libx264)"),
         }
     }
 
@@ -249,18 +249,18 @@ pub(crate) fn spawn_video_recorder(
 
     let mut child = child
         .spawn()
-        .map_err(|error| format!("Falha ao iniciar o ffmpeg para video: {error}"))?;
+        .map_err(|error| trf("Falha ao iniciar o ffmpeg para vídeo: {error}", &[("error", error.to_string())]))?;
     let mut stdin = child
         .stdin
         .take()
-        .ok_or_else(|| "O ffmpeg nao abriu stdin para a gravacao.".to_string())?;
+        .ok_or_else(|| tr("O ffmpeg não abriu stdin para a gravação."))?;
 
     let finished_output = output_path.clone();
     thread::spawn(move || {
         let mut write_error = String::new();
         for frame in frame_receiver {
             if let Err(error) = stdin.write_all(&frame) {
-                write_error = format!("Falha ao enviar frame para o ffmpeg: {error}");
+                write_error = trf("Falha ao enviar frame para o ffmpeg: {error}", &[("error", error.to_string())]);
                 break;
             }
         }
@@ -289,9 +289,15 @@ pub(crate) fn spawn_video_recorder(
             Err(error) => (
                 false,
                 if write_error.is_empty() {
-                    format!("Falha ao finalizar o ffmpeg: {error}")
+                    trf("Falha ao finalizar o ffmpeg: {error}", &[("error", error.to_string())])
                 } else {
-                    format!("{write_error}; falha ao finalizar o ffmpeg: {error}")
+                    trf(
+                        "{write_error}; falha ao finalizar o ffmpeg: {error}",
+                        &[
+                            ("write_error", write_error),
+                            ("error", error.to_string()),
+                        ],
+                    )
                 },
             ),
         };
@@ -324,28 +330,28 @@ pub(crate) fn write_smoke_video(frame: &OwnedFrame, output_path: &Path) -> Resul
 
     let mut child = child
         .spawn()
-        .map_err(|error| format!("Falha ao iniciar ffmpeg no smoke test: {error}"))?;
+        .map_err(|error| trf("Falha ao iniciar ffmpeg no smoke test: {error}", &[("error", error.to_string())]))?;
     let mut stdin = child
         .stdin
         .take()
-        .ok_or_else(|| "O ffmpeg nao abriu stdin no smoke test.".to_string())?;
+        .ok_or_else(|| tr("O ffmpeg não abriu stdin no smoke test."))?;
 
     for _ in 0..30 {
         stdin
             .write_all(&frame.data)
-            .map_err(|error| format!("Falha ao alimentar o ffmpeg no smoke test: {error}"))?;
+            .map_err(|error| trf("Falha ao alimentar o ffmpeg no smoke test: {error}", &[("error", error.to_string())]))?;
     }
     drop(stdin);
 
     let output = child
         .wait_with_output()
-        .map_err(|error| format!("Falha ao finalizar o ffmpeg no smoke test: {error}"))?;
+        .map_err(|error| trf("Falha ao finalizar o ffmpeg no smoke test: {error}", &[("error", error.to_string())]))?;
     if output.status.success() {
         Ok(())
     } else {
         Err(command_stderr_or(
             &output.stderr,
-            "ffmpeg falhou no smoke test de video.",
+            &tr("ffmpeg falhou no smoke test de vídeo."),
         ))
     }
 }

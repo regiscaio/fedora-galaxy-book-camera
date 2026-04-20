@@ -10,8 +10,11 @@ CARGO_REGISTRY_CACHE := $(CACHE_ROOT)/cargo-registry
 CARGO_GIT_CACHE := $(CACHE_ROOT)/cargo-git
 DIST_DIR := dist
 RPM_SPEC := packaging/fedora/$(PACKAGE_NAME).spec
+PO_LANGS := en es it
+POT_FILE := po/$(PACKAGE_NAME).pot
+I18N_SOURCES := $(shell find src -name '*.rs' -print | sort)
 
-.PHONY: help build test smoke-test vendor dist srpm rpm install-local clean
+.PHONY: help build test smoke-test vendor dist srpm rpm install-local i18n-extract i18n-update i18n-validate clean
 
 help:
 	@printf '%s\n' \
@@ -19,6 +22,9 @@ help:
 		'make test            Run unit tests' \
 		'make smoke-test      Run the app smoke test' \
 		'make vendor          Vendor Rust crates for offline RPM builds' \
+		'make i18n-extract    Generate gettext template in po/' \
+		'make i18n-update     Merge current sources into po/*.po' \
+		'make i18n-validate   Validate po/*.po with msgfmt' \
 		'make dist            Generate source tarball for RPM builds' \
 		'make srpm            Generate source RPM in dist/' \
 		'make rpm             Generate binary RPM and source RPM in dist/' \
@@ -135,6 +141,32 @@ rpm: dist
 
 install-local: build
 	./scripts/install-galaxybook-camera-launcher.sh
+
+i18n-extract:
+	@set -euo pipefail; \
+	mkdir -p po; \
+	xgettext \
+		--language=Rust \
+		--from-code=UTF-8 \
+		--package-name="$(PACKAGE_NAME)" \
+		--package-version="$(VERSION)" \
+		--keyword=tr \
+		--keyword=trf \
+		--keyword=trn:1,2 \
+		-o "$(POT_FILE)" \
+		$(I18N_SOURCES)
+
+i18n-update: i18n-extract
+	@set -euo pipefail; \
+	for lang in $(PO_LANGS); do \
+		msgmerge --update --backup=none "po/$$lang.po" "$(POT_FILE)"; \
+	done
+
+i18n-validate:
+	@set -euo pipefail; \
+	for lang in $(PO_LANGS); do \
+		msgfmt --check-format -o /dev/null "po/$$lang.po"; \
+	done
 
 clean:
 	rm -rf target vendor .cargo dist

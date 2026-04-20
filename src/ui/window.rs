@@ -16,6 +16,7 @@ use galaxybook_camera::{
     normalize_countdown_seconds,
     preferred_video_encoder_backend,
     spawn_camera_worker,
+    tr,
     AudioSourceOption,
     CameraConfig,
     CaptureMode,
@@ -127,17 +128,17 @@ impl CameraWindow {
 
         let preview_button = gtk::Button::builder()
             .icon_name("media-playback-start-symbolic")
-            .tooltip_text("Iniciar preview")
+            .tooltip_text(tr("Iniciar preview"))
             .build();
         preview_button.add_css_class("flat");
 
         let settings_menu = gtk::gio::Menu::new();
-        settings_menu.append(Some("Preferências"), Some("win.show-settings"));
-        settings_menu.append(Some("Sobre"), Some("win.show-about"));
+        settings_menu.append(Some(&tr("Preferências")), Some("win.show-settings"));
+        settings_menu.append(Some(&tr("Sobre")), Some("win.show-about"));
 
         let settings_button = gtk::MenuButton::builder()
             .icon_name("open-menu-symbolic")
-            .tooltip_text("Abrir menu")
+            .tooltip_text(tr("Abrir menu"))
             .menu_model(&settings_menu)
             .build();
         settings_button.add_css_class("flat");
@@ -148,12 +149,12 @@ impl CameraWindow {
         countdown_box.set_margin_start(12);
         countdown_box.set_margin_end(12);
 
-        let countdown_title = gtk::Label::new(Some("Contagem regressiva"));
+        let countdown_title = gtk::Label::new(Some(&tr("Contagem regressiva")));
         countdown_title.add_css_class("heading");
         countdown_title.set_xalign(0.0);
         countdown_box.append(&countdown_title);
 
-        let countdown_off_button = gtk::CheckButton::with_label("Desligado");
+        let countdown_off_button = gtk::CheckButton::with_label(&tr("Desligado"));
         countdown_off_button.set_active(true);
         countdown_box.append(&countdown_off_button);
 
@@ -168,7 +169,7 @@ impl CameraWindow {
         let countdown_popover = gtk::Popover::builder().child(&countdown_box).build();
         let countdown_button = gtk::MenuButton::builder()
             .icon_name("camera-timer-symbolic")
-            .tooltip_text("Contagem regressiva")
+            .tooltip_text(tr("Contagem regressiva"))
             .popover(&countdown_popover)
             .build();
         countdown_button.add_css_class("flat");
@@ -188,8 +189,8 @@ impl CameraWindow {
 
         let placeholder = adw::StatusPage::builder()
             .icon_name("camera-photo-symbolic")
-            .title("Preview parado")
-            .description("Clique em Iniciar preview para ativar a câmera.")
+            .title(tr("Preview parado"))
+            .description(tr("Clique em Iniciar preview para ativar a câmera."))
             .build();
         placeholder.add_css_class("camera-placeholder");
         placeholder.set_halign(Align::Center);
@@ -218,14 +219,14 @@ impl CameraWindow {
         preview_overlay.add_overlay(&countdown_overlay_label);
         preview_overlay.add_overlay(&placeholder);
 
-        let status_label = gtk::Label::new(Some("Preview parado. Clique em Iniciar preview."));
+        let status_label = gtk::Label::new(Some(&tr("Preview parado. Clique em Iniciar preview.")));
         status_label.set_xalign(0.0);
         status_label.set_wrap(true);
         status_label.add_css_class("dim-label");
 
         let photo_mode_button = gtk::ToggleButton::builder()
             .icon_name("camera-photo-symbolic")
-            .tooltip_text("Modo foto")
+            .tooltip_text(tr("Modo foto"))
             .build();
         photo_mode_button.add_css_class("flat");
         photo_mode_button.add_css_class("camera-mode-button");
@@ -233,7 +234,7 @@ impl CameraWindow {
 
         let video_mode_button = gtk::ToggleButton::builder()
             .icon_name("camera-video-symbolic")
-            .tooltip_text("Modo vídeo")
+            .tooltip_text(tr("Modo vídeo"))
             .build();
         video_mode_button.add_css_class("flat");
         video_mode_button.add_css_class("camera-mode-button");
@@ -248,7 +249,7 @@ impl CameraWindow {
         capture_button_glyph.set_valign(Align::Center);
 
         let capture_button = gtk::Button::new();
-        capture_button.set_tooltip_text(Some("Tirar foto"));
+        capture_button.set_tooltip_text(Some(&tr("Tirar foto")));
         capture_button.set_child(Some(&capture_button_glyph));
         capture_button.add_css_class("capture-button");
         capture_button.set_size_request(72, 72);
@@ -312,7 +313,7 @@ impl CameraWindow {
             restart_pending: false,
             post_stop_status: None,
             last_media_path: None,
-            status: "Preview parado. Clique em Iniciar preview.".to_string(),
+            status: tr("Preview parado. Clique em Iniciar preview."),
             audio_sources,
             pending_capture_action: None,
         };

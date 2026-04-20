@@ -1,6 +1,8 @@
 use adw::prelude::*;
 use galaxybook_camera::{
     photo_library_dir,
+    tr,
+    trf,
     video_library_dir,
     AudioSourceOption,
     Preset,
@@ -48,32 +50,32 @@ pub struct ControlWidgets {
 
 pub fn build_control_widgets(audio_sources: &[AudioSourceOption]) -> ControlWidgets {
     let auto_apply_row = adw::SwitchRow::builder()
-        .title("Aplicar automaticamente")
-        .subtitle("Envie os ajustes assim que eles mudarem.")
+        .title(tr("Aplicar automaticamente"))
+        .subtitle(tr("Envie os ajustes assim que eles mudarem."))
         .build();
     let show_grid_row = adw::SwitchRow::builder()
-        .title("Guia de Composição")
-        .subtitle("Mostra a regra dos terços sobre o preview.")
+        .title(tr("Guia de Composição"))
+        .subtitle(tr("Mostra a regra dos terços sobre o preview."))
         .build();
     let mirror_row = adw::SwitchRow::builder()
-        .title("Espelhar imagem")
-        .subtitle("Vale para preview, foto e vídeo.")
+        .title(tr("Espelhar imagem"))
+        .subtitle(tr("Vale para preview, foto e vídeo."))
         .build();
     let record_audio_row = adw::SwitchRow::builder()
-        .title("Gravar áudio")
-        .subtitle("Usa o microfone padrão ou a fonte selecionada.")
+        .title(tr("Gravar áudio"))
+        .subtitle(tr("Usa o microfone padrão ou a fonte selecionada."))
         .build();
 
     let preset_row = build_combo_row(
-        "Preset",
+        &tr("Preset"),
         None,
         &Preset::all()
             .iter()
-            .map(|preset| preset.label().to_string())
+            .map(|preset| preset.translated_label())
             .collect::<Vec<_>>(),
     );
     let audio_source_row = build_combo_row(
-        "Fonte de áudio",
+        &tr("Fonte de áudio"),
         None,
         &audio_sources
             .iter()
@@ -94,10 +96,10 @@ pub fn build_control_widgets(audio_sources: &[AudioSourceOption]) -> ControlWidg
     let (gamma_scale, gamma_value) = build_scale(0.50, 1.80, 0.01);
     let (sharpness_scale, sharpness_value) = build_scale(1.00, 2.00, 0.01);
 
-    let apply_button = gtk::Button::with_label("Aplicar");
+    let apply_button = gtk::Button::with_label(&tr("Aplicar"));
     apply_button.add_css_class("suggested-action");
-    let save_button = gtk::Button::with_label("Salvar");
-    let reset_button = gtk::Button::with_label("Resetar");
+    let save_button = gtk::Button::with_label(&tr("Salvar"));
+    let reset_button = gtk::Button::with_label(&tr("Resetar"));
 
     ControlWidgets {
         auto_apply_row,
@@ -143,8 +145,8 @@ pub fn build_sidebar(
     let page = adw::PreferencesPage::new();
 
     let flow_group = adw::PreferencesGroup::builder()
-        .title("Fluxo")
-        .description("Comportamento do preview e ações rápidas.")
+        .title(tr("Fluxo"))
+        .description(tr("Comportamento do preview e ações rápidas."))
         .build();
     flow_group.add(&controls.auto_apply_row);
     flow_group.add(&controls.show_grid_row);
@@ -174,70 +176,72 @@ pub fn build_sidebar(
     flow_group.add(&action_row);
 
     let capture_group = adw::PreferencesGroup::builder()
-        .title("Captura")
-        .description("Presets de imagem do notebook. O zoom do preview fica no dock principal.")
+        .title(tr("Captura"))
+        .description(tr("Presets de imagem do notebook. O zoom do preview fica no dock principal."))
         .build();
     capture_group.add(&controls.preset_row);
 
     let image_group = adw::PreferencesGroup::builder()
-        .title("Imagem")
-        .description("Ajustes diretos no frame do preview.")
+        .title(tr("Imagem"))
+        .description(tr("Ajustes diretos no frame do preview."))
         .build();
-    image_group.add(&slider_row("Brilho", &controls.brightness_scale, &controls.brightness_value));
+    image_group.add(&slider_row(&tr("Brilho"), &controls.brightness_scale, &controls.brightness_value));
     image_group.add(&slider_row(
-        "Exposição (EV)",
+        &tr("Exposição (EV)"),
         &controls.exposure_scale,
         &controls.exposure_value,
     ));
     image_group.add(&slider_row(
-        "Contraste",
+        &tr("Contraste"),
         &controls.contrast_scale,
         &controls.contrast_value,
     ));
     image_group.add(&slider_row(
-        "Saturação",
+        &tr("Saturação"),
         &controls.saturation_scale,
         &controls.saturation_value,
     ));
-    image_group.add(&slider_row("Matiz", &controls.hue_scale, &controls.hue_value));
+    image_group.add(&slider_row(&tr("Matiz"), &controls.hue_scale, &controls.hue_value));
     image_group.add(&slider_row(
-        "Nitidez",
+        &tr("Nitidez"),
         &controls.sharpness_scale,
         &controls.sharpness_value,
     ));
 
     let color_group = adw::PreferencesGroup::builder()
-        .title("Cor")
-        .description("Temperatura, tinta e ganho por canal.")
+        .title(tr("Cor"))
+        .description(tr("Temperatura, tinta e ganho por canal."))
         .build();
     color_group.add(&slider_row(
-        "Temperatura",
+        &tr("Temperatura"),
         &controls.temperature_scale,
         &controls.temperature_value,
     ));
-    color_group.add(&slider_row("Tinta", &controls.tint_scale, &controls.tint_value));
-    color_group.add(&slider_row("Vermelho", &controls.red_scale, &controls.red_value));
-    color_group.add(&slider_row("Verde", &controls.green_scale, &controls.green_value));
-    color_group.add(&slider_row("Azul", &controls.blue_scale, &controls.blue_value));
-    color_group.add(&slider_row("Gamma", &controls.gamma_scale, &controls.gamma_value));
+    color_group.add(&slider_row(&tr("Tinta"), &controls.tint_scale, &controls.tint_value));
+    color_group.add(&slider_row(&tr("Vermelho"), &controls.red_scale, &controls.red_value));
+    color_group.add(&slider_row(&tr("Verde"), &controls.green_scale, &controls.green_value));
+    color_group.add(&slider_row(&tr("Azul"), &controls.blue_scale, &controls.blue_value));
+    color_group.add(&slider_row(&tr("Gamma"), &controls.gamma_scale, &controls.gamma_value));
 
     let video_group = adw::PreferencesGroup::builder()
-        .title("Vídeo")
-        .description("Áudio, saída e backend do encoder.")
+        .title(tr("Vídeo"))
+        .description(tr("Áudio, saída e backend do encoder."))
         .build();
     video_group.add(&controls.record_audio_row);
     video_group.add(&controls.audio_source_row);
     let folders_row = adw::ActionRow::builder()
-        .title("Saídas")
-        .subtitle(format!(
-            "Fotos em {}\nVídeos em {}",
-            photo_library_dir().display(),
-            video_library_dir().display()
+        .title(tr("Saídas"))
+        .subtitle(trf(
+            "Fotos em {photo_dir}\nVídeos em {video_dir}",
+            &[
+                ("photo_dir", photo_library_dir().display().to_string()),
+                ("video_dir", video_library_dir().display().to_string()),
+            ],
         ))
         .build();
     video_group.add(&folders_row);
     let encoder_row = adw::ActionRow::builder()
-        .title("Encoder")
+        .title(tr("Encoder"))
         .subtitle(encoder_backend.ui_label())
         .build();
     video_group.add(&encoder_row);

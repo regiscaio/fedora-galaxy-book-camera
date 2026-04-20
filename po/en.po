@@ -1,0 +1,881 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: galaxybook-camera 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-20 16:48-0300\n"
+"PO-Revision-Date: 2026-04-20 16:48-0300\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/lib.rs:206
+msgid "A configuração da câmera não retornou stream para listar resoluções."
+msgstr "A configuração da câmera não retornou stream para listar resoluções."
+
+#: src/camera/worker.rs:376
+msgid "A configuração da câmera não retornou um stream válido."
+msgstr "A configuração da câmera não retornou um stream válido."
+
+#: src/camera/worker.rs:388
+msgid "A configuração solicitada ficou inválida depois da validação."
+msgstr "A configuração solicitada ficou inválida depois da validação."
+
+#: src/camera/capture.rs:59
+msgid "A configuração still da câmera não retornou um stream válido."
+msgstr "A configuração still da câmera não retornou um stream válido."
+
+#: src/camera/capture.rs:82
+msgid "A configuração still ficou inválida depois da validação."
+msgstr "A configuração still ficou inválida depois da validação."
+
+#: src/camera/capture.rs:92
+#, rust-format
+msgid ""
+"A câmera não aceitou ABGR8888 para still capture; formato final: "
+"{pixel_format}."
+msgstr ""
+"A câmera não aceitou ABGR8888 para still capture; formato final: "
+"{pixel_format}."
+
+#: src/camera/capture.rs:118
+msgid "A câmera não retornou buffer para a captura still."
+msgstr "A câmera não retornou buffer para a captura still."
+
+#: src/camera/capture.rs:174
+msgid "A foto still não retornou dados de imagem."
+msgstr "A foto still não retornou dados de imagem."
+
+#: src/camera/capture.rs:169
+msgid "A foto still não retornou o buffer esperado."
+msgstr "A foto still não retornou o buffer esperado."
+
+#: src/camera/capture.rs:166
+msgid "A foto still não retornou um frame final válido."
+msgstr "A foto still não retornou um frame final válido."
+
+#: src/camera/capture.rs:63
+msgid "ABGR8888 não está disponível neste host."
+msgstr "ABGR8888 não está disponível neste host."
+
+#: src/ui/about.rs:85
+msgid "Abrir detalhes"
+msgstr "Open details"
+
+#: src/ui/about.rs:194
+msgid "Abrir link"
+msgstr "Open link"
+
+#: src/ui/window.rs:141
+msgid "Abrir menu"
+msgstr "Open menu"
+
+#: src/ui/window/capture.rs:49
+msgid "Aguardando o próximo frame para iniciar a gravação..."
+msgstr "Waiting for the next frame to start recording..."
+
+#: src/camera/capture.rs:192
+msgid "Ainda não há frame válido para salvar como foto."
+msgstr "Ainda não há frame válido para salvar como foto."
+
+#: src/ui/window/lifecycle.rs:102
+msgid "Ajustes aplicados."
+msgstr "Adjustments applied."
+
+#: src/ui/sidebar.rs:186
+msgid "Ajustes diretos no frame do preview."
+msgstr "Direct adjustments on the preview frame."
+
+#: src/ui/sidebar.rs:99
+msgid "Aplicar"
+msgstr "Apply"
+
+#: src/ui/sidebar.rs:53
+msgid "Aplicar automaticamente"
+msgstr "Apply automatically"
+
+#: src/ui/about.rs:283
+msgid "Aplicativo"
+msgstr "Application"
+
+#: src/ui/about.rs:260
+msgid "Aplicativo de câmera nativo para Fedora no Galaxy Book."
+msgstr "Native camera app for Fedora on the Galaxy Book."
+
+#: src/ui/about.rs:290
+msgid "App ID"
+msgstr "App ID"
+
+#: src/ui/about.rs:303
+msgid "Armazenamento"
+msgstr "Storage"
+
+#: src/ui/about.rs:304
+msgid "Arquivos locais e diretórios usados pelo aplicativo."
+msgstr "Local files and directories used by the application."
+
+#: src/ui/sidebar.rs:223
+msgid "Azul"
+msgstr "Blue"
+
+#: src/ui/sidebar.rs:188
+msgid "Brilho"
+msgstr "Brightness"
+
+#: src/media/ffmpeg.rs:25
+msgid "CPU (libx264)"
+msgstr "CPU (libx264)"
+
+#: src/camera/worker.rs:194
+msgid "Canal interno do preview foi encerrado."
+msgstr "Canal interno do preview foi encerrado."
+
+#: src/ui/controls.rs:81
+msgid "Cancelar contagem regressiva"
+msgstr "Cancel countdown"
+
+#: src/ui/sidebar.rs:179
+msgid "Captura"
+msgstr "Capture"
+
+#: src/ui/window/capture.rs:32
+#, rust-format
+msgid "Capturando foto em resolução máxima em {output_path}..."
+msgstr "Capturing max-resolution photo to {output_path}..."
+
+#: src/ui/window.rs:193
+msgid "Clique em Iniciar preview para ativar a câmera."
+msgstr "Click Start preview to enable the camera."
+
+#: src/ui/sidebar.rs:149
+msgid "Comportamento do preview e ações rápidas."
+msgstr "Preview behavior and quick actions."
+
+#: src/ui/about.rs:308
+#, fuzzy
+msgid "Configuração"
+msgstr "Saturation"
+
+#: src/ui/window/bindings.rs:345
+#, rust-format
+msgid "Configuração salva em {config_path}."
+msgstr "Configuração salva em {config_path}."
+
+#: src/ui/window/lifecycle.rs:55
+msgid ""
+"Configuração salva. A nova resolução ou preset será aplicada no próximo "
+"preview."
+msgstr ""
+"Settings saved. The new resolution or preset will be applied on the next "
+"preview."
+
+#: src/ui/window/lifecycle.rs:60
+msgid "Configuração salva. Clique em Aplicar para enviar ao preview."
+msgstr "Settings saved. Click Apply to send them to the preview."
+
+#: src/ui/controls.rs:111 src/ui/window.rs:152 src/ui/window.rs:172
+msgid "Contagem regressiva"
+msgstr "Countdown"
+
+#: src/ui/window/capture.rs:65
+msgid "Contagem regressiva cancelada."
+msgstr "Countdown cancelled."
+
+#: src/ui/controls.rs:106
+#, rust-format
+msgid "Contagem regressiva: {seconds}s"
+msgstr "Countdown: {seconds}s"
+
+#: src/ui/sidebar.rs:195
+msgid "Contraste"
+msgstr "Contrast"
+
+#: src/ui/sidebar.rs:212
+msgid "Cor"
+msgstr "Color"
+
+#: src/lib.rs:189
+#, rust-format
+msgid "Câmera {camera_id} não ficou acessível para listar resoluções."
+msgstr "Câmera {camera_id} não ficou acessível para listar resoluções."
+
+#: src/camera/capture.rs:50 src/camera/worker.rs:367
+#, rust-format
+msgid "Câmera {camera_id} não ficou acessível pelo CameraManager."
+msgstr "Câmera {camera_id} não ficou acessível pelo CameraManager."
+
+#: src/ui/about.rs:291
+msgid "Desktop ID"
+msgstr "Desktop ID"
+
+#: src/ui/window.rs:157
+msgid "Desligado"
+msgstr "Off"
+
+#: src/ui/about.rs:82 src/ui/about.rs:279 src/ui/about.rs:330
+msgid "Detalhes"
+msgstr "Details"
+
+#: src/ui/sidebar.rs:244
+msgid "Encoder"
+msgstr "Encoder"
+
+#: src/ui/sidebar.rs:54
+msgid "Envie os ajustes assim que eles mudarem."
+msgstr "Send adjustments as soon as they change."
+
+#: src/camera/worker.rs:174
+#, rust-format
+msgid "Erro no preview: {error}"
+msgstr "Erro no preview: {error}"
+
+#: src/ui/sidebar.rs:61
+msgid "Espelhar imagem"
+msgstr "Mirror image"
+
+#: src/ui/sidebar.rs:190
+msgid "Exposição (EV)"
+msgstr "Exposure (EV)"
+
+#: src/ui/about.rs:204
+#, rust-format
+msgid "Falha ao abrir o link: {error}"
+msgstr "Failed to open the link: {error}"
+
+#: src/camera/capture.rs:53
+#, rust-format
+msgid "Falha ao adquirir a câmera para foto still: {error}"
+msgstr "Falha ao adquirir a câmera para foto still: {error}"
+
+#: src/lib.rs:197
+#, rust-format
+msgid "Falha ao adquirir a câmera para listar resoluções: {error}"
+msgstr "Falha ao adquirir a câmera para listar resoluções: {error}"
+
+#: src/camera/worker.rs:370
+#, rust-format
+msgid "Falha ao adquirir a câmera: {error}"
+msgstr "Falha ao adquirir a câmera: {error}"
+
+#: src/media/ffmpeg.rs:342
+#, rust-format
+msgid "Falha ao alimentar o ffmpeg no smoke test: {error}"
+msgstr "Falha ao alimentar o ffmpeg no smoke test: {error}"
+
+#: src/camera/capture.rs:115
+#, rust-format
+msgid "Falha ao alocar buffer para foto still: {error}"
+msgstr "Falha ao alocar buffer para foto still: {error}"
+
+#: src/camera/worker.rs:411
+#, rust-format
+msgid "Falha ao alocar buffers da câmera: {error}"
+msgstr "Falha ao alocar buffers da câmera: {error}"
+
+#: src/camera/capture.rs:127
+#, rust-format
+msgid "Falha ao anexar buffer da foto still: {error}"
+msgstr "Falha ao anexar buffer da foto still: {error}"
+
+#: src/camera/worker.rs:427
+#, rust-format
+msgid "Falha ao anexar buffer à requisição: {error}"
+msgstr "Falha ao anexar buffer à requisição: {error}"
+
+#: src/camera/capture.rs:207
+#, rust-format
+msgid "Falha ao codificar a foto em JPEG: {error}"
+msgstr "Falha ao codificar a foto em JPEG: {error}"
+
+#: src/camera/capture.rs:99
+#, rust-format
+msgid "Falha ao configurar a câmera para foto still: {error}"
+msgstr "Falha ao configurar a câmera para foto still: {error}"
+
+#: src/camera/worker.rs:395
+#, rust-format
+msgid "Falha ao configurar a câmera: {error}"
+msgstr "Falha ao configurar a câmera: {error}"
+
+#: src/camera/capture.rs:202
+#, rust-format
+msgid "Falha ao criar o arquivo da foto: {error}"
+msgstr "Falha ao criar o arquivo da foto: {error}"
+
+#: src/app/singleton.rs:49
+#, rust-format
+msgid "Falha ao criar o socket singleton do app: {error}"
+msgstr "Falha ao criar o socket singleton do app: {error}"
+
+#: src/camera/capture.rs:124
+msgid "Falha ao criar request para foto still."
+msgstr "Falha ao criar request para foto still."
+
+#: src/camera/worker.rs:424
+msgid "Falha ao criar uma requisição de captura."
+msgstr "Falha ao criar uma requisição de captura."
+
+#: src/camera/capture.rs:135
+#, rust-format
+msgid "Falha ao enfileirar a foto still: {error}"
+msgstr "Falha ao enfileirar a foto still: {error}"
+
+#: src/camera/worker.rs:439
+#, rust-format
+msgid "Falha ao enfileirar requisição inicial: {error}"
+msgstr "Falha ao enfileirar requisição inicial: {error}"
+
+#: src/media/ffmpeg.rs:263
+#, rust-format
+msgid "Falha ao enviar frame para o ffmpeg: {error}"
+msgstr "Falha ao enviar frame para o ffmpeg: {error}"
+
+#: src/media/ffmpeg.rs:348
+#, rust-format
+msgid "Falha ao finalizar o ffmpeg no smoke test: {error}"
+msgstr "Falha ao finalizar o ffmpeg no smoke test: {error}"
+
+#: src/media/ffmpeg.rs:292
+#, rust-format
+msgid "Falha ao finalizar o ffmpeg: {error}"
+msgstr "Falha ao finalizar o ffmpeg: {error}"
+
+#: src/ui/window/events.rs:106
+msgid "Falha ao gravar vídeo."
+msgstr "Failed to record video."
+
+#: src/ui/window/events.rs:109
+#, rust-format
+msgid "Falha ao gravar vídeo: {stderr}"
+msgstr "Failed to record video: {stderr}"
+
+#: src/lib.rs:412
+#, rust-format
+msgid "Falha ao inicializar libcamera no smoke test: {error}"
+msgstr "Falha ao inicializar libcamera no smoke test: {error}"
+
+#: src/lib.rs:175
+#, rust-format
+msgid "Falha ao inicializar libcamera para listar resoluções: {error}"
+msgstr "Falha ao inicializar libcamera para listar resoluções: {error}"
+
+#: src/camera/worker.rs:434
+#, rust-format
+msgid "Falha ao iniciar a captura: {error}"
+msgstr "Falha ao iniciar a captura: {error}"
+
+#: src/camera/capture.rs:132
+#, rust-format
+msgid "Falha ao iniciar a câmera para foto still: {error}"
+msgstr "Falha ao iniciar a câmera para foto still: {error}"
+
+#: src/media/ffmpeg.rs:333
+#, rust-format
+msgid "Falha ao iniciar ffmpeg no smoke test: {error}"
+msgstr "Falha ao iniciar ffmpeg no smoke test: {error}"
+
+#: src/media/ffmpeg.rs:252
+#, rust-format
+msgid "Falha ao iniciar o ffmpeg para vídeo: {error}"
+msgstr "Falha ao iniciar o ffmpeg para vídeo: {error}"
+
+#: src/camera/capture.rs:33
+#, rust-format
+msgid "Falha ao iniciar o libcamera para foto still: {error}"
+msgstr "Falha ao iniciar o libcamera para foto still: {error}"
+
+#: src/camera/worker.rs:132
+#, rust-format
+msgid "Falha ao iniciar o libcamera: {error}"
+msgstr "Falha ao iniciar o libcamera: {error}"
+
+#: src/camera/worker.rs:416
+#, rust-format
+msgid "Falha ao mapear buffer da câmera na memória: {error}"
+msgstr "Falha ao mapear buffer da câmera na memória: {error}"
+
+#: src/camera/capture.rs:120
+#, rust-format
+msgid "Falha ao mapear buffer da foto still: {error}"
+msgstr "Falha ao mapear buffer da foto still: {error}"
+
+#: src/camera/capture.rs:200
+msgid "Falha ao montar a imagem RGBA da foto."
+msgstr "Falha ao montar a imagem RGBA da foto."
+
+#: src/main.rs:93
+#, rust-format
+msgid "Falha ao preparar a instância única do {app_name}: {error}"
+msgstr "Falha ao preparar a instância única do {app_name}: {error}"
+
+#: src/camera/worker.rs:491 src/ui/window/capture.rs:20
+#, rust-format
+msgid "Falha ao preparar a pasta da câmera: {error}"
+msgstr "Falha ao preparar a pasta da câmera: {error}"
+
+#: src/app/singleton.rs:32
+#, rust-format
+msgid "Falha ao preparar a pasta do singleton: {error}"
+msgstr "Falha ao preparar a pasta do singleton: {error}"
+
+#: src/camera/capture.rs:154
+#, rust-format
+msgid "Falha ao reenfileirar frame de aquecimento da foto still: {error}"
+msgstr "Falha ao reenfileirar frame de aquecimento da foto still: {error}"
+
+#: src/camera/worker.rs:183
+#, rust-format
+msgid "Falha ao reenfileirar o frame da câmera: {error}"
+msgstr "Falha ao reenfileirar o frame da câmera: {error}"
+
+#: src/ui/window/bindings.rs:143 src/ui/window/bindings.rs:338
+#: src/ui/window/capture.rs:190 src/ui/window/lifecycle.rs:12
+#: src/ui/window/lifecycle.rs:47 src/ui/window/lifecycle.rs:70
+#, rust-format
+msgid "Falha ao salvar configuração: {error}"
+msgstr "Falha ao salvar configuração: {error}"
+
+#: src/ui/window/events.rs:81
+msgid "Falha ao salvar foto."
+msgstr "Failed to save photo."
+
+#: src/ui/window/events.rs:84
+#, rust-format
+msgid "Falha ao salvar foto: {stderr}"
+msgstr "Failed to save photo: {stderr}"
+
+#: src/camera/worker.rs:312 src/ui/window/capture.rs:60
+msgid "Finalizando arquivo de vídeo..."
+msgstr "Finalizing video file..."
+
+#: src/ui/sidebar.rs:148
+msgid "Fluxo"
+msgstr "Flow"
+
+#: src/ui/sidebar.rs:78
+msgid "Fonte de áudio"
+msgstr "Audio source"
+
+#: src/ui/window/capture.rs:208
+#, rust-format
+msgid "Foto em {seconds}s..."
+msgstr "Photo in {seconds}s..."
+
+#: src/ui/window/events.rs:62
+#, rust-format
+msgid "Foto máxima salva em {output_path} ({width}x{height})."
+msgstr "Max-resolution photo saved to {output_path} ({width}x{height})."
+
+#: src/ui/window/events.rs:74
+#, rust-format
+msgid "Foto salva em {output_path}."
+msgstr "Photo saved to {output_path}."
+
+#: src/ui/about.rs:309
+msgid "Fotos"
+msgstr "Photos"
+
+#: src/ui/sidebar.rs:235
+#, rust-format
+msgid ""
+"Fotos em {photo_dir}\n"
+"Vídeos em {video_dir}"
+msgstr ""
+"Fotos em {photo_dir}\n"
+"Vídeos em {video_dir}"
+
+#: src/lib.rs:265 src/lib.rs:306
+msgid "Frame invalido: dados insuficientes para a resolucao atual."
+msgstr "Frame invalido: dados insuficientes para a resolucao atual."
+
+#: src/lib.rs:263 src/lib.rs:304
+msgid "Frame invalido: overflow ao calcular o tamanho do buffer."
+msgstr "Frame invalido: overflow ao calcular o tamanho do buffer."
+
+#: src/media/ffmpeg.rs:22
+msgid "GPU NVIDIA (NVENC)"
+msgstr "NVIDIA GPU (NVENC)"
+
+#: src/ui/sidebar.rs:224
+msgid "Gamma"
+msgstr "Gamma"
+
+#: src/camera/worker.rs:505
+#, rust-format
+msgid "Gravando vídeo em {output_path} usando {backend_label}."
+msgstr "Gravando vídeo em {output_path} usando {backend_label}."
+
+#: src/ui/sidebar.rs:65
+msgid "Gravar áudio"
+msgstr "Record audio"
+
+#: src/ui/sidebar.rs:57
+msgid "Guia de Composição"
+msgstr "Composition grid"
+
+#: src/ui/about.rs:284
+msgid "Identificação pública e técnica do Galaxy Book Câmera."
+msgstr "Public and technical identification of Galaxy Book Camera."
+
+#: src/ui/sidebar.rs:185
+msgid "Imagem"
+msgstr "Image"
+
+#: src/ui/window/lifecycle.rs:24
+msgid "Iniciando preview..."
+msgstr "Starting preview..."
+
+#: src/ui/controls.rs:91
+msgid "Iniciar gravação"
+msgstr "Start recording"
+
+#: src/ui/controls.rs:36 src/ui/window.rs:131
+msgid "Iniciar preview"
+msgstr "Start preview"
+
+#: src/camera/worker.rs:287 src/ui/window/capture.rs:42
+#: src/ui/window/capture.rs:86
+msgid "Inicie o preview antes de gravar vídeo."
+msgstr "Start the preview before recording video."
+
+#: src/app/config.rs:21
+msgid "Interno claro"
+msgstr "Bright indoor"
+
+#: src/app/config.rs:22
+msgid "Luz do dia"
+msgstr "Daylight"
+
+#: src/ui/sidebar.rs:204
+msgid "Matiz"
+msgstr "Hue"
+
+#: src/ui/window.rs:229
+msgid "Modo foto"
+msgstr "Photo mode"
+
+#: src/ui/window.rs:237
+msgid "Modo vídeo"
+msgstr "Video mode"
+
+#: src/ui/sidebar.rs:58
+msgid "Mostra a regra dos terços sobre o preview."
+msgstr "Shows the rule of thirds over the preview."
+
+#: src/app/config.rs:20
+#, fuzzy
+msgid "Natural"
+msgstr "Capture"
+
+#: src/camera/worker.rs:364
+msgid "Nenhuma câmera disponível no libcamera."
+msgstr "Nenhuma câmera disponível no libcamera."
+
+#: src/camera/capture.rs:47
+msgid "Nenhuma câmera disponível para capturar a foto."
+msgstr "Nenhuma câmera disponível para capturar a foto."
+
+#: src/lib.rs:184
+msgid "Nenhuma câmera disponível para listar resoluções."
+msgstr "Nenhuma câmera disponível para listar resoluções."
+
+#: src/ui/sidebar.rs:206
+msgid "Nitidez"
+msgstr "Sharpness"
+
+#: src/ui/about.rs:288
+msgid "Nome"
+msgstr "Name"
+
+#: src/ui/window/lifecycle.rs:93
+msgid ""
+"Nova resolução ou preset salvo. O próximo preview já abrirá com a nova "
+"configuração."
+msgstr ""
+"New resolution or preset saved. The next preview will already open with the "
+"new configuration."
+
+#: src/lib.rs:203
+msgid "Não foi possível gerar a configuração base para listar resoluções."
+msgstr "Não foi possível gerar a configuração base para listar resoluções."
+
+#: src/camera/worker.rs:374
+msgid "Não foi possível gerar a configuração padrão da câmera."
+msgstr "Não foi possível gerar a configuração padrão da câmera."
+
+#: src/camera/capture.rs:57
+msgid "Não foi possível gerar a configuração still da câmera."
+msgstr "Não foi possível gerar a configuração still da câmera."
+
+#: src/camera/worker.rs:399
+msgid "Não foi possível ler o stream configurado."
+msgstr "Não foi possível ler o stream configurado."
+
+#: src/camera/capture.rs:103
+msgid "Não foi possível ler o stream still configurado."
+msgstr "Não foi possível ler o stream still configurado."
+
+#: src/camera/capture.rs:89
+msgid "Não foi possível ler o stream still validado."
+msgstr "Não foi possível ler o stream still validado."
+
+#: src/media/ffmpeg.rs:337
+msgid "O ffmpeg não abriu stdin no smoke test."
+msgstr "O ffmpeg não abriu stdin no smoke test."
+
+#: src/media/ffmpeg.rs:256
+msgid "O ffmpeg não abriu stdin para a gravação."
+msgstr "O ffmpeg não abriu stdin para a gravação."
+
+#: src/lib.rs:227
+msgid "O libcamera não retornou resoluções válidas para o preview."
+msgstr "O libcamera não retornou resoluções válidas para o preview."
+
+#: src/camera/worker.rs:479
+msgid "O request completado não trouxe dados de imagem."
+msgstr "O request completado não trouxe dados de imagem."
+
+#: src/camera/worker.rs:474
+msgid "O request completado não trouxe o buffer esperado."
+msgstr "O request completado não trouxe o buffer esperado."
+
+#: src/camera/worker.rs:401
+msgid "O stream configurado não ficou disponível depois do configure()."
+msgstr "O stream configurado não ficou disponível depois do configure()."
+
+#: src/camera/capture.rs:105
+msgid "O stream still não ficou disponível depois do configure()."
+msgstr "O stream still não ficou disponível depois do configure()."
+
+#: src/media/audio.rs:40
+msgid "Padrão do sistema"
+msgstr "System default"
+
+#: src/ui/window/capture.rs:13
+msgid "Parando preview..."
+msgstr "Stopping preview..."
+
+#: src/ui/controls.rs:88
+msgid "Parar gravação"
+msgstr "Stop recording"
+
+#: src/ui/controls.rs:34
+msgid "Parar preview"
+msgstr "Stop preview"
+
+#: src/camera/worker.rs:246
+msgid "Pare a gravação antes de tirar foto em resolução máxima."
+msgstr "Pare a gravação antes de tirar foto em resolução máxima."
+
+#: src/ui/window.rs:136
+msgid "Preferências"
+msgstr "Preferences"
+
+#: src/camera/worker.rs:299
+#, rust-format
+msgid "Preparando gravação em {output_path}..."
+msgstr "Preparando gravação em {output_path}..."
+
+#: src/ui/sidebar.rs:70
+msgid "Preset"
+msgstr "Preset"
+
+#: src/ui/sidebar.rs:180
+msgid ""
+"Presets de imagem do notebook. O zoom do preview fica no dock principal."
+msgstr "Notebook image presets. Preview zoom stays in the main dock."
+
+#: src/camera/worker.rs:338
+#, rust-format
+msgid "Preview ativo em {width}x{height} com libcamera direto."
+msgstr "Preview ativo em {width}x{height} com libcamera direto."
+
+#: src/ui/window/events.rs:16
+#, rust-format
+msgid "Preview ativo em {width}x{height}."
+msgstr "Preview active at {width}x{height}."
+
+#: src/ui/window/events.rs:23
+msgid "Preview ativo."
+msgstr "Preview active."
+
+#: src/ui/window.rs:192
+msgid "Preview parado"
+msgstr "Preview stopped"
+
+#: src/camera/worker.rs:221
+msgid "Preview parado."
+msgstr "Preview parado."
+
+#: src/ui/window.rs:222 src/ui/window.rs:316
+msgid "Preview parado. Clique em Iniciar preview."
+msgstr "Preview stopped. Click Start preview."
+
+#: src/ui/about.rs:62
+msgid "Projeto"
+msgstr "Project"
+
+#: src/ui/about.rs:66
+msgid "Página da web"
+msgstr "Website"
+
+#: src/ui/window/lifecycle.rs:88
+msgid "Reiniciando o preview para aplicar a nova resolução ou preset..."
+msgstr "Restarting preview to apply the new resolution or preset..."
+
+#: src/ui/about.rs:78
+msgid "Relatar problema"
+msgstr "Report issue"
+
+#: src/ui/about.rs:72
+msgid "Repositório do projeto"
+msgstr "Project repository"
+
+#: src/ui/sidebar.rs:102
+msgid "Resetar"
+msgstr "Reset"
+
+#: src/ui/sidebar.rs:101
+msgid "Salvar"
+msgstr "Save"
+
+#: src/ui/sidebar.rs:200
+msgid "Saturação"
+msgstr "Saturation"
+
+#: src/ui/sidebar.rs:233
+msgid "Saídas"
+msgstr "Outputs"
+
+#: src/ui/about.rs:24 src/ui/about.rs:32 src/ui/about.rs:48 src/ui/about.rs:107
+#: src/ui/about.rs:131 src/ui/window.rs:137
+msgid "Sobre"
+msgstr "About"
+
+#: src/ui/sidebar.rs:216
+msgid "Temperatura"
+msgstr "Temperature"
+
+#: src/ui/sidebar.rs:213
+msgid "Temperatura, tinta e ganho por canal."
+msgstr "Temperatura, tinta e ganho por canal."
+
+#: src/camera/capture.rs:142
+#, rust-format
+msgid "Tempo esgotado aguardando o frame {frame_index} da foto still: {error}"
+msgstr "Tempo esgotado aguardando o frame {frame_index} da foto still: {error}"
+
+#: src/ui/sidebar.rs:220
+msgid "Tinta"
+msgstr "Tint"
+
+#: src/ui/controls.rs:85 src/ui/window.rs:252
+msgid "Tirar foto"
+msgstr "Take photo"
+
+#: src/ui/sidebar.rs:66
+msgid "Usa o microfone padrão ou a fonte selecionada."
+msgstr "Uses the default microphone or the selected source."
+
+#: src/ui/sidebar.rs:62
+msgid "Vale para preview, foto e vídeo."
+msgstr "Applies to preview, photo and video."
+
+#: src/ui/sidebar.rs:222
+msgid "Verde"
+msgstr "Green"
+
+#: src/ui/sidebar.rs:221
+msgid "Vermelho"
+msgstr "Red"
+
+#: src/ui/about.rs:289
+msgid "Versão"
+msgstr "Version"
+
+#: src/ui/about.rs:247
+#, rust-format
+msgid "Versão {version}"
+msgstr "Version {version}"
+
+#: src/ui/about.rs:83
+msgid "Versão, app ID e caminhos usados pelo app."
+msgstr "Version, app ID and paths used by the app."
+
+#: src/ui/about.rs:36
+msgid "Voltar"
+msgstr "Voltar"
+
+#: src/ui/sidebar.rs:227
+msgid "Vídeo"
+msgstr "Video"
+
+#: src/ui/window/capture.rs:211
+#, rust-format
+msgid "Vídeo em {seconds}s..."
+msgstr "Video in {seconds}s..."
+
+#: src/ui/window/events.rs:100
+#, rust-format
+msgid "Vídeo salvo em {output_path}."
+msgstr "Video saved to {output_path}."
+
+#: src/ui/about.rs:310
+#, fuzzy
+msgid "Vídeos"
+msgstr "Video"
+
+#: src/camera/worker.rs:380
+msgid "XBGR8888 não está disponível neste host."
+msgstr "XBGR8888 não está disponível neste host."
+
+#: src/lib.rs:208
+msgid "XBGR8888 não está disponível para listar resoluções."
+msgstr "XBGR8888 não está disponível para listar resoluções."
+
+#: src/ui/zoom.rs:70
+msgid "Zoom do preview"
+msgstr "Preview zoom"
+
+#: src/ui/zoom.rs:104
+#, rust-format
+msgid "Zoom do preview: {selected_label}"
+msgstr "Zoom do preview: {selected_label}"
+
+#: src/app/config.rs:203
+msgid "automático"
+msgstr "automatic"
+
+#: src/media/ffmpeg.rs:354
+msgid "ffmpeg falhou no smoke test de vídeo."
+msgstr "ffmpeg falhou no smoke test de vídeo."
+
+#: src/media/ffmpeg.rs:23
+msgid "hardware Intel (Quick Sync)"
+msgstr "Intel hardware (Quick Sync)"
+
+#: src/media/ffmpeg.rs:24
+msgid "hardware VA-API"
+msgstr "VA-API hardware"
+
+#: src/media/audio.rs:66 src/media/audio.rs:73
+#, rust-format
+msgid "{name} (padrão atual)"
+msgstr "{name} (current default)"
+
+#: src/media/ffmpeg.rs:295
+#, rust-format
+msgid "{write_error}; falha ao finalizar o ffmpeg: {error}"
+msgstr "{write_error}; falha ao finalizar o ffmpeg: {error}"
+
+#: src/ui/sidebar.rs:228
+msgid "Áudio, saída e backend do encoder."
+msgstr "Audio, output and encoder backend."

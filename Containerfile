@@ -4,6 +4,7 @@ RUN dnf install -y \
     cargo \
     rust \
     rpm-build \
+    gettext \
     pkgconf-pkg-config \
     clang \
     gcc \

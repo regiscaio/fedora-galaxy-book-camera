@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::{normalize_countdown_seconds, preview_zoom_options};
+use crate::{normalize_countdown_seconds, preview_zoom_options, tr};
 
 #[derive(Clone, Copy)]
 pub enum Preset {
@@ -15,11 +15,11 @@ impl Preset {
         [Preset::Natural, Preset::Indoor, Preset::Daylight]
     }
 
-    pub fn label(self) -> &'static str {
+    pub fn translated_label(self) -> String {
         match self {
-            Preset::Natural => "Natural",
-            Preset::Indoor => "Interno claro",
-            Preset::Daylight => "Luz do dia",
+            Preset::Natural => tr("Natural"),
+            Preset::Indoor => tr("Interno claro"),
+            Preset::Daylight => tr("Luz do dia"),
         }
     }
 
@@ -200,7 +200,7 @@ impl CameraConfig {
     pub fn resolution_text(&self) -> String {
         match (self.width, self.height) {
             (Some(width), Some(height)) => format!("{width}x{height}"),
-            _ => "automatico".to_string(),
+            _ => tr("automático"),
         }
     }
 

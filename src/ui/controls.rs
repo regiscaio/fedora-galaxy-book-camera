@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use galaxybook_camera::{AudioSourceOption, CameraConfig, CaptureMode};
+use galaxybook_camera::{tr, trf, AudioSourceOption, CameraConfig, CaptureMode};
 use gtk::prelude::*;
 use libadwaita::prelude::ComboRowExt;
 use libadwaita as adw;
@@ -30,11 +30,12 @@ pub fn refresh_preview_chrome(
     } else {
         "media-playback-start-symbolic"
     });
-    preview_button.set_tooltip_text(Some(if preview_active {
-        "Parar preview"
+    let tooltip = if preview_active {
+        tr("Parar preview")
     } else {
-        "Iniciar preview"
-    }));
+        tr("Iniciar preview")
+    };
+    preview_button.set_tooltip_text(Some(&tooltip));
 }
 
 pub fn refresh_capture_controls(
@@ -77,17 +78,17 @@ pub fn refresh_capture_controls(
     }
 
     if countdown_active {
-        capture_button.set_tooltip_text(Some("Cancelar contagem regressiva"));
+        capture_button.set_tooltip_text(Some(&tr("Cancelar contagem regressiva")));
     } else {
         match capture_mode {
             CaptureMode::Photo => {
-                capture_button.set_tooltip_text(Some("Tirar foto"));
+                capture_button.set_tooltip_text(Some(&tr("Tirar foto")));
             }
             CaptureMode::Video if is_recording => {
-                capture_button.set_tooltip_text(Some("Parar gravação"));
+                capture_button.set_tooltip_text(Some(&tr("Parar gravação")));
             }
             CaptureMode::Video => {
-                capture_button.set_tooltip_text(Some("Iniciar gravação"));
+                capture_button.set_tooltip_text(Some(&tr("Iniciar gravação")));
             }
         }
     }
@@ -101,10 +102,13 @@ pub fn refresh_countdown_controls(
 ) {
     if configured_seconds > 0 {
         countdown_button
-            .set_tooltip_text(Some(&format!("Contagem regressiva: {configured_seconds}s")));
+            .set_tooltip_text(Some(&trf(
+                "Contagem regressiva: {seconds}s",
+                &[("seconds", configured_seconds.to_string())],
+            )));
         countdown_button.add_css_class("camera-header-toggle-active");
     } else {
-        countdown_button.set_tooltip_text(Some("Contagem regressiva"));
+        countdown_button.set_tooltip_text(Some(&tr("Contagem regressiva")));
         countdown_button.remove_css_class("camera-header-toggle-active");
     }
 

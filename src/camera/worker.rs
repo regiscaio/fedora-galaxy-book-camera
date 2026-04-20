@@ -29,6 +29,8 @@ use crate::{
     set_softisp_env,
     spawn_video_recorder,
     timestamp,
+    tr,
+    trf,
     video_library_dir,
     AdjustmentProfile,
     CameraConfig,
@@ -127,7 +129,7 @@ fn camera_worker(
         Ok(manager) => manager,
         Err(error) => {
             let _ = event_tx.send(WorkerEvent::PreviewStopped {
-                reason: format!("Falha ao iniciar o libcamera: {error}"),
+                reason: trf("Falha ao iniciar o libcamera: {error}", &[("error", error.to_string())]),
             });
             return;
         }
@@ -168,13 +170,19 @@ fn camera_worker(
                 if let Err(error) =
                     process_completed_request(active_session, &config, &mut request, &event_tx)
                 {
-                    let _ = event_tx.send(WorkerEvent::Status(format!("Erro no preview: {error}")));
+                    let _ = event_tx.send(WorkerEvent::Status(trf(
+                        "Erro no preview: {error}",
+                        &[("error", error)],
+                    )));
                 }
 
                 request.reuse(ReuseFlag::REUSE_BUFFERS);
                 if let Err((_, error)) = active_session.camera.queue_request(request) {
                     let _ = event_tx.send(WorkerEvent::PreviewStopped {
-                        reason: format!("Falha ao reenfileirar o frame da camera: {error}"),
+                        reason: trf(
+                            "Falha ao reenfileirar o frame da câmera: {error}",
+                            &[("error", error.to_string())],
+                        ),
                     });
                     let mut old_session = session.take().unwrap();
                     stop_preview_session(&mut old_session);
@@ -183,7 +191,7 @@ fn camera_worker(
             Err(RecvTimeoutError::Timeout) => {}
             Err(RecvTimeoutError::Disconnected) => {
                 let _ = event_tx.send(WorkerEvent::PreviewStopped {
-                    reason: "Canal interno do preview foi encerrado.".to_string(),
+                    reason: tr("Canal interno do preview foi encerrado."),
                 });
                 if let Some(mut old_session) = session.take() {
                     stop_preview_session(&mut old_session);
@@ -210,7 +218,7 @@ fn handle_worker_command<'a>(
                 stop_preview_session(&mut active_session);
             }
             let _ = event_tx.send(WorkerEvent::PreviewStopped {
-                reason: "Preview parado.".to_string(),
+                reason: tr("Preview parado."),
             });
             false
         }
@@ -235,8 +243,7 @@ fn handle_worker_command<'a>(
                     let _ = event_tx.send(WorkerEvent::PhotoFinished {
                         success: false,
                         output_path,
-                        stderr: "Pare a gravacao antes de tirar foto em resolucao maxima."
-                            .to_string(),
+                        stderr: tr("Pare a gravação antes de tirar foto em resolução máxima."),
                         resolution: None,
                     });
                     return false;
@@ -277,7 +284,7 @@ fn handle_worker_command<'a>(
         WorkerCommand::StartRecording => {
             let Some(active_session) = session.as_mut() else {
                 let _ = event_tx.send(WorkerEvent::Status(
-                    "Inicie o preview antes de gravar video.".to_string(),
+                    tr("Inicie o preview antes de gravar vídeo."),
                 ));
                 return false;
             };
@@ -288,9 +295,9 @@ fn handle_worker_command<'a>(
             }
             let output_path = video_library_dir().join(format!("camera-{}.mp4", timestamp()));
             active_session.pending_recording_output = Some(output_path.clone());
-            let _ = event_tx.send(WorkerEvent::Status(format!(
-                "Preparando gravacao em {}...",
-                output_path.display()
+            let _ = event_tx.send(WorkerEvent::Status(trf(
+                "Preparando gravação em {output_path}...",
+                &[("output_path", output_path.display().to_string())],
             )));
             false
         }
@@ -302,7 +309,7 @@ fn handle_worker_command<'a>(
             if let Some(recorder) = active_session.recorder.take() {
                 drop(recorder);
                 let _ = event_tx.send(WorkerEvent::Status(
-                    "Finalizando arquivo de video...".to_string(),
+                    tr("Finalizando arquivo de vídeo..."),
                 ));
             }
             false
@@ -327,9 +334,12 @@ fn restart_preview_session<'a>(
                 width: session.width,
                 height: session.height,
             });
-            let _ = event_tx.send(WorkerEvent::Status(format!(
-                "Preview ativo em {}x{} com libcamera direto.",
-                session.width, session.height
+            let _ = event_tx.send(WorkerEvent::Status(trf(
+                "Preview ativo em {width}x{height} com libcamera direto.",
+                &[
+                    ("width", session.width.to_string()),
+                    ("height", session.height.to_string()),
+                ],
             )));
             Some(session)
         }
@@ -351,23 +361,23 @@ fn start_preview_session<'a>(
         .iter()
         .next()
         .map(|camera| camera.id().to_string())
-        .ok_or_else(|| "Nenhuma camera disponivel no libcamera.".to_string())?;
+        .ok_or_else(|| tr("Nenhuma câmera disponível no libcamera."))?;
     let camera_ref = manager
         .get(&camera_id)
-        .ok_or_else(|| format!("Camera {camera_id} nao ficou acessivel pelo CameraManager."))?;
+        .ok_or_else(|| trf("Câmera {camera_id} não ficou acessível pelo CameraManager.", &[("camera_id", camera_id.clone())]))?;
     let mut camera = camera_ref
         .acquire()
-        .map_err(|error| format!("Falha ao adquirir a camera: {error}"))?;
+        .map_err(|error| trf("Falha ao adquirir a câmera: {error}", &[("error", error.to_string())]))?;
 
     let mut configuration = camera
         .generate_configuration(&[StreamRole::ViewFinder])
-        .ok_or_else(|| "Nao foi possivel gerar a configuracao padrao da camera.".to_string())?;
+        .ok_or_else(|| tr("Não foi possível gerar a configuração padrão da câmera."))?;
     let Some(mut stream_cfg) = configuration.get_mut(0) else {
-        return Err("A configuracao da camera nao retornou um stream valido.".to_string());
+        return Err(tr("A configuração da câmera não retornou um stream válido."));
     };
 
     let pixel_format = PixelFormat::parse("XBGR8888")
-        .ok_or_else(|| "XBGR8888 nao esta disponivel neste host.".to_string())?;
+        .ok_or_else(|| tr("XBGR8888 não está disponível neste host."))?;
     stream_cfg.set_pixel_format(pixel_format);
     if let (Some(width), Some(height)) = (config.width, config.height) {
         stream_cfg.set_size(Size::new(width, height));
@@ -375,20 +385,20 @@ fn start_preview_session<'a>(
 
     match configuration.validate() {
         CameraConfigurationStatus::Invalid => {
-            return Err("A configuracao solicitada ficou invalida depois da validacao.".to_string())
+            return Err(tr("A configuração solicitada ficou inválida depois da validação."))
         }
         CameraConfigurationStatus::Adjusted | CameraConfigurationStatus::Valid => {}
     }
 
     camera
         .configure(&mut configuration)
-        .map_err(|error| format!("Falha ao configurar a camera: {error}"))?;
+        .map_err(|error| trf("Falha ao configurar a câmera: {error}", &[("error", error.to_string())]))?;
 
     let stream_cfg = configuration
         .get(0)
-        .ok_or_else(|| "Nao foi possivel ler o stream configurado.".to_string())?;
+        .ok_or_else(|| tr("Não foi possível ler o stream configurado."))?;
     let stream = stream_cfg.stream().ok_or_else(|| {
-        "O stream configurado nao ficou disponivel depois do configure().".to_string()
+        tr("O stream configurado não ficou disponível depois do configure().")
     })?;
     let size = stream_cfg.get_size();
     let width = size.width as usize;
@@ -398,12 +408,12 @@ fn start_preview_session<'a>(
     let mut allocator = FrameBufferAllocator::new(&camera);
     let buffers = allocator
         .alloc(&stream)
-        .map_err(|error| format!("Falha ao alocar buffers da camera: {error}"))?;
+        .map_err(|error| trf("Falha ao alocar buffers da câmera: {error}", &[("error", error.to_string())]))?;
     let buffers = buffers
         .into_iter()
         .map(|buffer| {
             MemoryMappedFrameBuffer::new(buffer)
-                .map_err(|error| format!("Falha ao mapear buffer da camera na memoria: {error}"))
+                .map_err(|error| trf("Falha ao mapear buffer da câmera na memória: {error}", &[("error", error.to_string())]))
         })
         .collect::<Result<Vec<MemoryMappedFrameBuffer<CameraFrameBuffer>>, String>>()?;
 
@@ -411,22 +421,22 @@ fn start_preview_session<'a>(
     for (index, buffer) in buffers.into_iter().enumerate() {
         let mut request = camera
             .create_request(Some(index as u64))
-            .ok_or_else(|| "Falha ao criar uma requisicao de captura.".to_string())?;
+            .ok_or_else(|| tr("Falha ao criar uma requisição de captura."))?;
         request
             .add_buffer(&stream, buffer)
-            .map_err(|error| format!("Falha ao anexar buffer a requisicao: {error}"))?;
+            .map_err(|error| trf("Falha ao anexar buffer à requisição: {error}", &[("error", error.to_string())]))?;
         requests.push(request);
     }
 
     let request_rx = camera.subscribe_request_completed();
     camera
         .start(None)
-        .map_err(|error| format!("Falha ao iniciar a captura: {error}"))?;
+        .map_err(|error| trf("Falha ao iniciar a captura: {error}", &[("error", error.to_string())]))?;
 
     for request in requests {
         camera
             .queue_request(request)
-            .map_err(|(_, error)| format!("Falha ao enfileirar requisicao inicial: {error}"))?;
+            .map_err(|(_, error)| trf("Falha ao enfileirar requisição inicial: {error}", &[("error", error.to_string())]))?;
     }
 
     Ok(PreviewSession {
@@ -461,12 +471,12 @@ fn process_completed_request(
 ) -> Result<(), String> {
     let framebuffer = request
         .buffer::<MemoryMappedFrameBuffer<CameraFrameBuffer>>(&session.stream)
-        .ok_or_else(|| "O request completado nao trouxe o buffer esperado.".to_string())?;
+        .ok_or_else(|| tr("O request completado não trouxe o buffer esperado."))?;
     let planes = framebuffer.data();
     let plane = planes
         .first()
         .copied()
-        .ok_or_else(|| "O request completado nao trouxe dados de imagem.".to_string())?;
+        .ok_or_else(|| tr("O request completado não trouxe dados de imagem."))?;
     let (preview_width, preview_height) = preview_dimensions(session.width, session.height);
     let needs_full_output =
         session.recorder.is_some() || session.pending_recording_output.is_some();
@@ -478,7 +488,7 @@ fn process_completed_request(
 
         if let Some(output_path) = session.pending_recording_output.take() {
             fs::create_dir_all(video_library_dir())
-                .map_err(|error| format!("Falha ao preparar a pasta da camera: {error}"))?;
+                .map_err(|error| trf("Falha ao preparar a pasta da câmera: {error}", &[("error", error.to_string())]))?;
             match spawn_video_recorder(
                 output_path.clone(),
                 output_frame.width,
@@ -491,10 +501,12 @@ fn process_completed_request(
                     recorder.try_send_frame(&output_frame);
                     let backend_label = recorder.backend.ui_label();
                     session.recorder = Some(recorder);
-                    let _ = event_tx.send(WorkerEvent::Status(format!(
-                        "Gravando video em {} usando {}.",
-                        output_path.display(),
-                        backend_label
+                    let _ = event_tx.send(WorkerEvent::Status(trf(
+                        "Gravando vídeo em {output_path} usando {backend_label}.",
+                        &[
+                            ("output_path", output_path.display().to_string()),
+                            ("backend_label", backend_label),
+                        ],
                     )));
                 }
                 Err(error) => {

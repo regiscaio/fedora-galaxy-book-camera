@@ -1,6 +1,8 @@
 use gtk::gdk;
 use gtk::glib;
 
+use galaxybook_camera::{tr, trf};
+
 use super::*;
 
 impl CameraWindow {
@@ -10,9 +12,15 @@ impl CameraWindow {
                 let mut state = self.state.borrow_mut();
                 state.preview_active = true;
                 state.preview_size = Some((width, height));
-                state.status = format!("Preview ativo em {}x{}.", width, height);
+                state.status = trf(
+                    "Preview ativo em {width}x{height}.",
+                    &[
+                        ("width", width.to_string()),
+                        ("height", height.to_string()),
+                    ],
+                );
                 drop(state);
-                self.status_label.set_label("Preview ativo.");
+                self.status_label.set_label(&tr("Preview ativo."));
                 self.refresh_preview_chrome();
                 self.refresh_header_metrics();
             }
@@ -50,24 +58,32 @@ impl CameraWindow {
                     self.state.borrow_mut().last_media_path = Some(output_path.clone());
                     if let Some((width, height)) = resolution {
                         self.set_status(
-                            &format!(
-                                "Foto máxima salva em {} ({}x{}).",
-                                output_path.display(),
-                                width,
-                                height
+                            &trf(
+                                "Foto máxima salva em {output_path} ({width}x{height}).",
+                                &[
+                                    ("output_path", output_path.display().to_string()),
+                                    ("width", width.to_string()),
+                                    ("height", height.to_string()),
+                                ],
                             ),
                             true,
                         );
                     } else {
                         self.set_status(
-                            &format!("Foto salva em {}.", output_path.display()),
+                            &trf(
+                                "Foto salva em {output_path}.",
+                                &[("output_path", output_path.display().to_string())],
+                            ),
                             true,
                         );
                     }
                 } else if stderr.is_empty() {
-                    self.set_status("Falha ao salvar foto.", true);
+                    self.set_status(&tr("Falha ao salvar foto."), true);
                 } else {
-                    self.set_status(&format!("Falha ao salvar foto: {stderr}"), true);
+                    self.set_status(
+                        &trf("Falha ao salvar foto: {stderr}", &[("stderr", stderr)]),
+                        true,
+                    );
                 }
             }
             WorkerEvent::RecordingFinished {
@@ -80,13 +96,19 @@ impl CameraWindow {
                 if success {
                     self.state.borrow_mut().last_media_path = Some(output_path.clone());
                     self.set_status(
-                        &format!("Vídeo salvo em {}.", output_path.display()),
+                        &trf(
+                            "Vídeo salvo em {output_path}.",
+                            &[("output_path", output_path.display().to_string())],
+                        ),
                         true,
                     );
                 } else if stderr.is_empty() {
-                    self.set_status("Falha ao gravar vídeo.", true);
+                    self.set_status(&tr("Falha ao gravar vídeo."), true);
                 } else {
-                    self.set_status(&format!("Falha ao gravar vídeo: {stderr}"), true);
+                    self.set_status(
+                        &trf("Falha ao gravar vídeo: {stderr}", &[("stderr", stderr)]),
+                        true,
+                    );
                 }
             }
         }

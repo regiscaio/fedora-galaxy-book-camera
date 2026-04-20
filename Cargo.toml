@@ -6,6 +6,7 @@ license = "GPL-2.0-only"
 
 [dependencies]
 chrono = { version = "0.4.42", default-features = false, features = ["clock", "std"] }
+gettextrs = { package = "gettext-rs", version = "0.7", features = ["gettext-system"] }
 image = { version = "0.25.8", default-features = false, features = ["jpeg"] }
 gtk = { package = "gtk4", version = "0.10", features = ["v4_10"] }
 libcamera = "0.7.0"

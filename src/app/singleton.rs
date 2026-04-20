@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
+use super::localization::trf;
 use super::paths::cache_dir;
 
 fn singleton_socket_path() -> PathBuf {
@@ -26,7 +27,12 @@ pub fn setup_singleton() -> Result<Option<SingletonState>, String> {
     let socket_path = singleton_socket_path();
     if let Some(parent) = socket_path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|error| format!("Falha ao preparar a pasta do singleton: {error}"))?;
+            .map_err(|error| {
+                trf(
+                    "Falha ao preparar a pasta do singleton: {error}",
+                    &[("error", error.to_string())],
+                )
+            })?;
     }
 
     if UnixStream::connect(&socket_path).is_ok() {
@@ -38,7 +44,12 @@ pub fn setup_singleton() -> Result<Option<SingletonState>, String> {
     }
 
     let listener = UnixListener::bind(&socket_path)
-        .map_err(|error| format!("Falha ao criar o socket singleton do app: {error}"))?;
+        .map_err(|error| {
+            trf(
+                "Falha ao criar o socket singleton do app: {error}",
+                &[("error", error.to_string())],
+            )
+        })?;
     let (signal_tx, signal_rx) = mpsc::channel();
     let listener_socket_path = socket_path.clone();
 

@@ -4,10 +4,12 @@ use std::rc::Rc;
 
 use galaxybook_camera::{
     default_config_path,
+    init_i18n,
     localized_app_name,
     run_smoke_test,
     set_softisp_env,
     setup_singleton,
+    trf,
     APP_ID,
     CameraConfig,
 };
@@ -55,6 +57,7 @@ fn parse_args() -> CliArgs {
 }
 
 fn main() {
+    init_i18n();
     let args = parse_args();
 
     if args.smoke_test {
@@ -86,10 +89,13 @@ fn main() {
         Ok(Some(singleton)) => singleton,
         Ok(None) => return,
         Err(error) => {
-            eprintln!(
-                "Falha ao preparar a instância única do {}: {error}",
-                localized_app_name()
-            );
+            eprintln!("{}", trf(
+                "Falha ao preparar a instância única do {app_name}: {error}",
+                &[
+                    ("app_name", localized_app_name()),
+                    ("error", error),
+                ],
+            ));
             std::process::exit(1);
         }
     };

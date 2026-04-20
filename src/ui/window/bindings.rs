@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::sync::mpsc::{Receiver, TryRecvError};
 use std::time::Duration;
 
-use galaxybook_camera::preview_zoom_options;
+use galaxybook_camera::{preview_zoom_options, trf};
 use gtk::glib::{self, ControlFlow};
 use gtk::prelude::*;
 use galaxybook_camera::Preset;
@@ -139,7 +139,10 @@ impl CameraWindow {
 
                 app.grid_overlay.set_visible(active);
                 if let Err(error) = app.persist_config() {
-                    app.set_status(&format!("Falha ao salvar configuracao: {error}"), true);
+                    app.set_status(
+                        &trf("Falha ao salvar configuração: {error}", &[("error", error)]),
+                        true,
+                    );
                 }
             }
         });
@@ -331,11 +334,17 @@ impl CameraWindow {
             let app = Rc::clone(self);
             move |_| {
                 if let Err(error) = app.persist_config() {
-                    app.set_status(&format!("Falha ao salvar configuracao: {error}"), true);
+                    app.set_status(
+                        &trf("Falha ao salvar configuração: {error}", &[("error", error)]),
+                        true,
+                    );
                     return;
                 }
                 app.set_status(
-                    &format!("Configuracao salva em {}.", app.config_path.display()),
+                    &trf(
+                        "Configuração salva em {config_path}.",
+                        &[("config_path", app.config_path.display().to_string())],
+                    ),
                     true,
                 );
             }

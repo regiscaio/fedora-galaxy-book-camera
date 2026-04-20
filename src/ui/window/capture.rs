@@ -1,7 +1,7 @@
 use std::fs;
 use std::rc::Rc;
 
-use galaxybook_camera::{photo_library_dir, timestamp};
+use galaxybook_camera::{photo_library_dir, timestamp, tr, trf};
 use gtk::glib::{self, ControlFlow};
 
 use super::*;
@@ -10,14 +10,14 @@ impl CameraWindow {
     pub(super) fn stop_preview(&self) {
         self.cancel_countdown(None);
         let _ = self.command_tx.send(WorkerCommand::StopPreview);
-        self.set_status("Parando preview...", false);
+        self.set_status(&tr("Parando preview..."), false);
     }
 
     pub(super) fn capture_photo_now(&self) {
         let output_dir = photo_library_dir();
         if let Err(error) = fs::create_dir_all(&output_dir) {
             self.set_status(
-                &format!("Falha ao preparar a pasta da câmera: {error}"),
+                &trf("Falha ao preparar a pasta da câmera: {error}", &[("error", error.to_string())]),
                 true,
             );
             return;
@@ -28,9 +28,9 @@ impl CameraWindow {
             output_path: output_path.clone(),
         });
         self.set_status(
-            &format!(
-                "Capturando foto em resolução máxima em {}...",
-                output_path.display()
+            &trf(
+                "Capturando foto em resolução máxima em {output_path}...",
+                &[("output_path", output_path.display().to_string())],
             ),
             false,
         );
@@ -39,14 +39,14 @@ impl CameraWindow {
     pub(super) fn start_recording_now(&self) {
         let preview_active = self.state.borrow().preview_active;
         if !preview_active {
-            self.set_status("Inicie o preview antes de gravar vídeo.", true);
+            self.set_status(&tr("Inicie o preview antes de gravar vídeo."), true);
             return;
         }
 
         let _ = self.command_tx.send(WorkerCommand::StartRecording);
         self.state.borrow_mut().is_recording = true;
         self.refresh_capture_controls();
-        self.set_status("Aguardando o próximo frame para iniciar a gravação...", false);
+        self.set_status(&tr("Aguardando o próximo frame para iniciar a gravação..."), false);
     }
 
     pub(super) fn stop_recording_now(&self) {
@@ -57,12 +57,12 @@ impl CameraWindow {
         let _ = self.command_tx.send(WorkerCommand::StopRecording);
         self.state.borrow_mut().is_recording = false;
         self.refresh_capture_controls();
-        self.set_status("Finalizando arquivo de vídeo...", false);
+        self.set_status(&tr("Finalizando arquivo de vídeo..."), false);
     }
 
     pub(super) fn handle_capture_action(self: &Rc<Self>) {
         if self.state.borrow().countdown_remaining.is_some() {
-            self.cancel_countdown(Some("Contagem regressiva cancelada."));
+            self.cancel_countdown(Some(&tr("Contagem regressiva cancelada.")));
             return;
         }
 
@@ -83,7 +83,7 @@ impl CameraWindow {
             CaptureMode::Photo => self.capture_photo_now(),
             CaptureMode::Video if is_recording => self.stop_recording_now(),
             CaptureMode::Video if !preview_active => {
-                self.set_status("Inicie o preview antes de gravar vídeo.", true);
+                self.set_status(&tr("Inicie o preview antes de gravar vídeo."), true);
             }
             CaptureMode::Video if countdown_seconds > 0 => {
                 self.start_countdown(PendingCaptureAction::StartRecording, countdown_seconds);
@@ -186,7 +186,10 @@ impl CameraWindow {
         }
 
         if let Err(error) = self.persist_config() {
-            self.set_status(&format!("Falha ao salvar configuracao: {error}"), true);
+            self.set_status(
+                &trf("Falha ao salvar configuração: {error}", &[("error", error)]),
+                true,
+            );
             return;
         }
 
@@ -201,7 +204,11 @@ impl CameraWindow {
 
 fn countdown_status_message(action: PendingCaptureAction, seconds: u32) -> String {
     match action {
-        PendingCaptureAction::Photo => format!("Foto em {seconds}s..."),
-        PendingCaptureAction::StartRecording => format!("Vídeo em {seconds}s..."),
+        PendingCaptureAction::Photo => {
+            trf("Foto em {seconds}s...", &[("seconds", seconds.to_string())])
+        }
+        PendingCaptureAction::StartRecording => {
+            trf("Vídeo em {seconds}s...", &[("seconds", seconds.to_string())])
+        }
     }
 }

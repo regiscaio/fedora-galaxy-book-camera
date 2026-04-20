@@ -15,9 +15,13 @@ mod media;
 
 pub use app::config::{CameraConfig, Preset};
 pub use app::localization::{
+    init_i18n,
     localized_app_name,
     localized_app_name_for_locale,
     localized_camera_word_for_locale,
+    tr,
+    trf,
+    trn,
 };
 pub use app::paths::{default_config_path, photo_library_dir, timestamp, video_library_dir};
 pub use app::singleton::{setup_singleton, SingletonState};
@@ -166,27 +170,42 @@ fn apply_simple_tuning_env() {
 fn detected_preview_resolution_options() -> Result<Vec<ResolutionOption>, String> {
     apply_simple_tuning_env();
     let manager = CameraManager::new()
-        .map_err(|error| format!("Falha ao inicializar libcamera para listar resoluções: {error}"))?;
+        .map_err(|error| {
+            trf(
+                "Falha ao inicializar libcamera para listar resoluções: {error}",
+                &[("error", error.to_string())],
+            )
+        })?;
     let camera_id = manager
         .cameras()
         .iter()
         .next()
         .map(|camera| camera.id().to_string())
-        .ok_or_else(|| "Nenhuma câmera disponível para listar resoluções.".to_string())?;
+        .ok_or_else(|| tr("Nenhuma câmera disponível para listar resoluções."))?;
     let camera_ref = manager
         .get(&camera_id)
-        .ok_or_else(|| format!("Câmera {camera_id} não ficou acessível para listar resoluções."))?;
+        .ok_or_else(|| {
+            trf(
+                "Câmera {camera_id} não ficou acessível para listar resoluções.",
+                &[("camera_id", camera_id.clone())],
+            )
+        })?;
     let camera = camera_ref
         .acquire()
-        .map_err(|error| format!("Falha ao adquirir a câmera para listar resoluções: {error}"))?;
+        .map_err(|error| {
+            trf(
+                "Falha ao adquirir a câmera para listar resoluções: {error}",
+                &[("error", error.to_string())],
+            )
+        })?;
     let configuration = camera
         .generate_configuration(&[StreamRole::ViewFinder])
-        .ok_or_else(|| "Não foi possível gerar a configuração base para listar resoluções.".to_string())?;
+        .ok_or_else(|| tr("Não foi possível gerar a configuração base para listar resoluções."))?;
     let stream_cfg = configuration
         .get(0)
-        .ok_or_else(|| "A configuração da câmera não retornou stream para listar resoluções.".to_string())?;
+        .ok_or_else(|| tr("A configuração da câmera não retornou stream para listar resoluções."))?;
     let pixel_format = PixelFormat::parse("XBGR8888")
-        .ok_or_else(|| "XBGR8888 não está disponível para listar resoluções.".to_string())?;
+        .ok_or_else(|| tr("XBGR8888 não está disponível para listar resoluções."))?;
 
     let mut sizes: Vec<(u32, u32)> = stream_cfg
         .formats()
@@ -205,7 +224,7 @@ fn detected_preview_resolution_options() -> Result<Vec<ResolutionOption>, String
     sizes.dedup();
 
     if sizes.is_empty() {
-        return Err("O libcamera não retornou resoluções válidas para o preview.".to_string());
+        return Err(tr("O libcamera não retornou resoluções válidas para o preview."));
     }
 
     Ok(sizes
@@ -241,9 +260,9 @@ impl OwnedFrame {
         let row_bytes = width.saturating_mul(4);
         let required = stride
             .checked_mul(height)
-            .ok_or_else(|| "Frame invalido: overflow ao calcular o tamanho do buffer.".to_string())?;
+            .ok_or_else(|| tr("Frame invalido: overflow ao calcular o tamanho do buffer."))?;
         if source.len() < required || row_bytes == 0 {
-            return Err("Frame invalido: dados insuficientes para a resolucao atual.".to_string());
+            return Err(tr("Frame invalido: dados insuficientes para a resolucao atual."));
         }
 
         let mut data = if stride == row_bytes {
@@ -282,9 +301,9 @@ impl OwnedFrame {
         let row_bytes = source_width.saturating_mul(4);
         let required = stride
             .checked_mul(source_height)
-            .ok_or_else(|| "Frame invalido: overflow ao calcular o tamanho do buffer.".to_string())?;
+            .ok_or_else(|| tr("Frame invalido: overflow ao calcular o tamanho do buffer."))?;
         if source.len() < required || row_bytes == 0 || target_width == 0 || target_height == 0 {
-            return Err("Frame invalido: dados insuficientes para a resolucao atual.".to_string());
+            return Err(tr("Frame invalido: dados insuficientes para a resolucao atual."));
         }
 
         let mut data = vec![0_u8; target_width * target_height * 4];
@@ -388,7 +407,12 @@ pub fn run_smoke_test(config_path: &Path) -> Result<(), String> {
     let config = CameraConfig::load(config_path);
     set_softisp_env(&config.softisp_mode);
     let cameras_count = CameraManager::new()
-        .map_err(|error| format!("Falha ao inicializar libcamera no smoke test: {error}"))?
+        .map_err(|error| {
+            trf(
+                "Falha ao inicializar libcamera no smoke test: {error}",
+                &[("error", error.to_string())],
+            )
+        })?
         .cameras()
         .iter()
         .count();

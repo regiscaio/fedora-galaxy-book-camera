@@ -1,6 +1,6 @@
 use std::fs;
 
-use galaxybook_camera::preview_zoom_options;
+use galaxybook_camera::{preview_zoom_options, tr, trf};
 
 use super::*;
 
@@ -8,7 +8,10 @@ impl CameraWindow {
     pub fn start_preview(&self) {
         self.cancel_countdown(None);
         if let Err(error) = self.persist_config() {
-            self.set_status(&format!("Falha ao salvar configuracao: {error}"), true);
+            self.set_status(
+                &trf("Falha ao salvar configuração: {error}", &[("error", error)]),
+                true,
+            );
             return;
         }
 
@@ -18,7 +21,7 @@ impl CameraWindow {
             state.post_stop_status = None;
         }
         let _ = self.command_tx.send(WorkerCommand::StartPreview);
-        self.set_status("Iniciando preview...", false);
+        self.set_status(&tr("Iniciando preview..."), false);
         self.refresh_preview_chrome();
         self.refresh_header_metrics();
     }
@@ -40,24 +43,33 @@ impl CameraWindow {
             self.apply_config_safely(restart_required);
         } else {
             if let Err(error) = self.persist_config() {
-                self.set_status(&format!("Falha ao salvar configuracao: {error}"), true);
+                self.set_status(
+                    &trf("Falha ao salvar configuração: {error}", &[("error", error)]),
+                    true,
+                );
                 return;
             }
 
             if restart_required {
                 self.set_status(
-                    "Configuração salva. A nova resolução ou preset será aplicada no próximo preview.",
+                    &tr("Configuração salva. A nova resolução ou preset será aplicada no próximo preview."),
                     false,
                 );
             } else {
-                self.set_status("Configuração salva. Clique em Aplicar para enviar ao preview.", false);
+                self.set_status(
+                    &tr("Configuração salva. Clique em Aplicar para enviar ao preview."),
+                    false,
+                );
             }
         }
     }
 
     pub(super) fn apply_config_safely(&self, restart_required: bool) {
         if let Err(error) = self.persist_config() {
-            self.set_status(&format!("Falha ao salvar configuracao: {error}"), true);
+            self.set_status(
+                &trf("Falha ao salvar configuração: {error}", &[("error", error)]),
+                true,
+            );
             return;
         }
 
@@ -73,12 +85,12 @@ impl CameraWindow {
 
             if preview_active {
                 self.set_status(
-                    "Reiniciando o preview para aplicar a nova resolução ou preset...",
+                    &tr("Reiniciando o preview para aplicar a nova resolução ou preset..."),
                     false,
                 );
             } else {
                 self.set_status(
-                    "Nova resolução ou preset salvo. O próximo preview já abrirá com a nova configuração.",
+                    &tr("Nova resolução ou preset salvo. O próximo preview já abrirá com a nova configuração."),
                     false,
                 );
             }
@@ -87,7 +99,7 @@ impl CameraWindow {
                 config,
                 restart: false,
             });
-            self.set_status("Ajustes aplicados.", false);
+            self.set_status(&tr("Ajustes aplicados."), false);
         }
     }
 

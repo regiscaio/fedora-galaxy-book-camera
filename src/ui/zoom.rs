@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use galaxybook_camera::preview_zoom_options;
+use galaxybook_camera::{preview_zoom_options, tr, trf};
 use gtk::prelude::*;
 use gtk::{Align, Orientation};
 
@@ -67,7 +67,7 @@ pub fn build_zoom_selector() -> ZoomSelectorWidgets {
     zoom_button_center.set_center_widget(Some(&zoom_label));
 
     let zoom_button = gtk::Button::new();
-    zoom_button.set_tooltip_text(Some("Zoom do preview"));
+    zoom_button.set_tooltip_text(Some(&tr("Zoom do preview")));
     zoom_button.set_can_focus(false);
     zoom_button.set_size_request(42, 42);
     zoom_button.set_halign(Align::Center);
@@ -100,7 +100,10 @@ pub fn refresh_zoom_selector(
     let selected_label = selected_option.map(|option| option.label.as_str()).unwrap_or("1x");
 
     zoom_label.set_label(selected_label);
-    zoom_button.set_tooltip_text(Some(&format!("Zoom do preview: {selected_label}")));
+    zoom_button.set_tooltip_text(Some(&trf(
+        "Zoom do preview: {selected_label}",
+        &[("selected_label", selected_label.to_string())],
+    )));
 
     let was_syncing = syncing_ui.replace(true);
     for (index, button) in zoom_option_buttons.iter().enumerate() {

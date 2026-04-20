@@ -14,6 +14,7 @@ ExclusiveArch:  x86_64
 BuildRequires:  cargo
 BuildRequires:  clang
 BuildRequires:  desktop-file-utils
+BuildRequires:  gettext
 BuildRequires:  gcc-c++
 BuildRequires:  make
 BuildRequires:  pkgconfig(gtk4)
@@ -40,6 +41,10 @@ install -Dm755 target/release/galaxybook-camera %{buildroot}%{_bindir}/galaxyboo
 install -Dm644 assets/galaxybook-camera.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
 install -Dm644 assets/camera-timer-symbolic.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/actions/camera-timer-symbolic.svg
 install -Dm644 data/libcamera/simple/ov02c10.yaml %{buildroot}%{_datadir}/galaxybook-camera/libcamera/simple/ov02c10.yaml
+for lang in en es it; do \
+  install -d %{buildroot}%{_datadir}/locale/$$lang/LC_MESSAGES; \
+  msgfmt po/$$lang.po -o %{buildroot}%{_datadir}/locale/$$lang/LC_MESSAGES/%{name}.mo; \
+done
 sed \
   -e 's|@EXEC@|galaxybook-camera|g' \
   -e 's|@ICON@|%{app_id}|g' \
@@ -59,6 +64,9 @@ cargo --offline test --locked --lib --bin galaxybook-camera
 %{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
 %{_datadir}/icons/hicolor/scalable/actions/camera-timer-symbolic.svg
 %{_datadir}/galaxybook-camera/libcamera/simple/ov02c10.yaml
+%{_datadir}/locale/en/LC_MESSAGES/%{name}.mo
+%{_datadir}/locale/es/LC_MESSAGES/%{name}.mo
+%{_datadir}/locale/it/LC_MESSAGES/%{name}.mo
 %{_datadir}/metainfo/%{app_id}.metainfo.xml
 
 %changelog
