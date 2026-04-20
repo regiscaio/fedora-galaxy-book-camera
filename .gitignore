@@ -4,6 +4,7 @@
 /.cargo/
 /.direnv/
 /.rpmbuild/
+/local/
 
 *.log
 *.rpm
