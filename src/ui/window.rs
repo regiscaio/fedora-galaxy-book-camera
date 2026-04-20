@@ -37,7 +37,9 @@ use super::{
     build_zoom_selector,
     draw_preview_grid,
     present_about_dialog,
+    refresh_zoom_selector,
     selected_audio_index,
+    set_zoom_selector_expanded,
     set_scale_value,
     ControlWidgets,
 };
@@ -804,32 +806,17 @@ impl CameraWindow {
     }
 
     fn refresh_zoom_controls(&self) {
-        let selected_index = self.state.borrow().config.resolution_index();
-        let selected_option = preview_zoom_options()
-            .get(selected_index)
-            .or_else(|| preview_zoom_options().first());
-        let selected_label = selected_option.map(|option| option.label.as_str()).unwrap_or("1x");
-
-        self.zoom_label.set_label(selected_label);
-        self.zoom_button
-            .set_tooltip_text(Some(&format!("Zoom do preview: {selected_label}")));
-
-        let was_syncing = self.syncing_ui.replace(true);
-        for (index, button) in self.zoom_option_buttons.iter().enumerate() {
-            let is_active = index == selected_index;
-            button.set_active(is_active);
-            if is_active {
-                button.add_css_class("camera-zoom-choice-active");
-            } else {
-                button.remove_css_class("camera-zoom-choice-active");
-            }
-        }
-        self.syncing_ui.set(was_syncing);
+        refresh_zoom_selector(
+            self.state.borrow().config.resolution_index(),
+            &self.zoom_button,
+            &self.zoom_label,
+            &self.zoom_option_buttons,
+            &self.syncing_ui,
+        );
     }
 
     fn set_zoom_selector_expanded(&self, expanded: bool) {
-        self.zoom_button.set_visible(!expanded);
-        self.zoom_strip.set_visible(expanded);
+        set_zoom_selector_expanded(&self.zoom_button, &self.zoom_strip, expanded);
     }
 
     fn refresh_header_metrics(&self) {
