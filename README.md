@@ -45,6 +45,19 @@ O fluxo para navegador, Meet, Discord, Teams e outros apps WebRTC continua
 dependendo do setup do host, por isso esse caminho segue documentado e
 automatizado no `Galaxy Book Setup`.
 
+No estado atual do stack, o app nativo de câmera do Fedora/GNOME já pode
+funcionar neste notebook. Ainda assim, os dois caminhos não entregam exatamente
+o mesmo resultado visual:
+
+- o app nativo do Fedora tende a mostrar uma imagem mais processada, com cor,
+  balanço de branco e aparência geral mais “prontos”;
+- o `Galaxy Book Camera` usa um caminho direto via `libcamera`, visualmente
+  mais cru e mais próximo do sensor, preservando mais detalhe fino e
+  oferecendo controle muito mais flexível sobre a imagem.
+
+Na prática, o app nativo pode parecer melhor em cor no estado padrão, enquanto
+o `Galaxy Book Camera` tende a entregar melhor detalhe e mais margem de ajuste.
+
 ## Por que existe um app dedicado
 
 O app nativo de câmera do GNOME foi uma referência importante de interface e de
@@ -65,6 +78,8 @@ validar o sensor, o preview e os ajustes específicos desse notebook. O
 - falar diretamente com o `libcamera` no fluxo principal da câmera;
 - carregar tuning próprio do sensor `ov02c10`;
 - expor a interface e os controles que fizeram sentido para esse hardware;
+- priorizar detalhe e controle fino da captura, em vez de depender apenas do
+  processamento padrão do caminho genérico do desktop;
 - separar o uso diário da câmera do fluxo de reparo, diagnóstico e bridge,
   que ficou concentrado no `Galaxy Book Setup`.
 
@@ -181,6 +196,16 @@ Comportamento atual:
   `libcamera` direto.
 - o zoom do preview usa um seletor inline no dock principal, mantendo o app
   mais próximo da lógica de câmera mobile sem abandonar o layout GNOME.
+
+Comparação prática com o app nativo do Fedora:
+
+- o `Galaxy Book Camera` costuma entregar mais detalhe e um comportamento mais
+  previsível para este hardware;
+- o app nativo do Fedora pode ter cor padrão mais agradável em alguns cenários,
+  porque o caminho do sistema aparece mais processado visualmente;
+- o `Galaxy Book Camera` continua sendo a melhor opção quando a prioridade é
+  controle de imagem, tuning do sensor e consistência no caminho direto via
+  `libcamera`.
 
 ## Limitações conhecidas
 
