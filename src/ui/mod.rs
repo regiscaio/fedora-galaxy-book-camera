@@ -1,11 +1,11 @@
 pub mod about;
-pub mod builders;
+pub mod sidebar;
 pub mod styles;
 pub mod window;
 pub mod zoom;
 
 pub use about::present_about_dialog;
-pub use builders::{
+pub use sidebar::{
     build_control_widgets,
     build_sidebar,
     selected_audio_index,
