@@ -1,8 +1,6 @@
 use std::env;
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::sync::{
     mpsc::{self, Receiver, RecvTimeoutError, Sender, SyncSender, TrySendError},
     OnceLock,
@@ -23,6 +21,7 @@ use libcamera::{
 
 mod app;
 mod image;
+mod media;
 
 pub use app::config::{CameraConfig, Preset};
 pub use app::localization::{
@@ -32,8 +31,19 @@ pub use app::localization::{
 };
 pub use app::paths::{default_config_path, photo_library_dir, timestamp, video_library_dir};
 pub use app::singleton::{setup_singleton, SingletonState};
+pub use media::audio::{
+    detect_audio_sources,
+    selected_audio_source_label,
+    AudioSourceOption,
+};
+pub use media::ffmpeg::{preferred_video_encoder_backend, VideoEncoderBackend};
 pub(crate) use app::paths::home_dir;
 pub(crate) use image::adjustments::{apply_adjustments, AdjustmentProfile};
+pub(crate) use media::ffmpeg::{
+    spawn_video_recorder,
+    write_smoke_video,
+    RecorderHandle,
+};
 
 pub const APP_ID: &str = "com.caioregis.GalaxyBookCamera";
 pub const APP_NAME: &str = "Galaxy Book Camera";
@@ -46,7 +56,6 @@ const PREVIEW_FRAMERATE: u32 = 30;
 const MAX_PREVIEW_LONG_EDGE: usize = 1280;
 const STILL_CAPTURE_WARMUP_FRAMES: u32 = 6;
 const DRM_RENDER_NODES: [&str; 2] = ["/dev/dri/renderD128", "/dev/dri/renderD129"];
-static VIDEO_ENCODER_BACKEND: OnceLock<VideoEncoderBackend> = OnceLock::new();
 static PREVIEW_RESOLUTION_OPTIONS: OnceLock<Vec<ResolutionOption>> = OnceLock::new();
 static PREVIEW_ZOOM_OPTIONS: OnceLock<Vec<PreviewZoomOption>> = OnceLock::new();
 const PREVIEW_ZOOM_PRESETS: [(f64, &str); 5] = [
@@ -342,30 +351,6 @@ fn preview_dimensions(width: usize, height: usize) -> (usize, usize) {
     (scaled_width, scaled_height)
 }
 
-struct RecorderHandle {
-    width: usize,
-    height: usize,
-    backend: VideoEncoderBackend,
-    frame_sender: mpsc::SyncSender<Vec<u8>>,
-}
-
-impl RecorderHandle {
-    fn try_send_frame(&self, frame: &OwnedFrame) {
-        if frame.width != self.width || frame.height != self.height {
-            return;
-        }
-
-        let data = frame.data.clone();
-        let _ = self.frame_sender.try_send(data);
-    }
-}
-
-#[derive(Clone)]
-pub struct AudioSourceOption {
-    pub id: String,
-    pub label: String,
-}
-
 pub enum WorkerCommand {
     StartPreview,
     StopPreview,
@@ -405,74 +390,6 @@ pub enum WorkerEvent {
         output_path: PathBuf,
         stderr: String,
     },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum VideoEncoderBackend {
-    NvidiaNvenc,
-    IntelQsv,
-    Vaapi,
-    CpuX264,
-}
-
-impl VideoEncoderBackend {
-    pub fn ui_label(self) -> &'static str {
-        match self {
-            Self::NvidiaNvenc => "GPU NVIDIA (NVENC)",
-            Self::IntelQsv => "hardware Intel (Quick Sync)",
-            Self::Vaapi => "hardware VA-API",
-            Self::CpuX264 => "CPU (libx264)",
-        }
-    }
-
-    fn add_global_args(self, command: &mut Command) {
-        if let Self::Vaapi = self {
-            if let Some(render_node) = first_drm_render_node() {
-                command.arg("-vaapi_device").arg(render_node);
-            }
-        }
-    }
-
-    fn add_video_output_args(self, command: &mut Command) {
-        command.arg("-fps_mode:v").arg("vfr");
-
-        match self {
-            Self::NvidiaNvenc => {
-                command
-                    .arg("-c:v")
-                    .arg("h264_nvenc")
-                    .arg("-preset")
-                    .arg("p5")
-                    .arg("-tune")
-                    .arg("hq")
-                    .arg("-pix_fmt")
-                    .arg("yuv420p");
-            }
-            Self::IntelQsv => {
-                command
-                    .arg("-c:v")
-                    .arg("h264_qsv")
-                    .arg("-preset")
-                    .arg("faster");
-            }
-            Self::Vaapi => {
-                command
-                    .arg("-vf")
-                    .arg("format=nv12,hwupload")
-                    .arg("-c:v")
-                    .arg("h264_vaapi");
-            }
-            Self::CpuX264 => {
-                command
-                    .arg("-c:v")
-                    .arg("libx264")
-                    .arg("-preset")
-                    .arg("ultrafast")
-                    .arg("-pix_fmt")
-                    .arg("yuv420p");
-            }
-        }
-    }
 }
 
 struct PreviewSession<'a> {
@@ -1078,186 +995,6 @@ fn capture_photo_max_resolution_with_manager(
     capture_result
 }
 
-fn ffmpeg_rawvideo_command(
-    width: usize,
-    height: usize,
-    use_wallclock_timestamps: bool,
-    backend: VideoEncoderBackend,
-) -> Command {
-    let mut command = Command::new("ffmpeg");
-    command
-        .arg("-hide_banner")
-        .arg("-loglevel")
-        .arg("error")
-        .arg("-y");
-
-    backend.add_global_args(&mut command);
-
-    if use_wallclock_timestamps {
-        command
-            .arg("-use_wallclock_as_timestamps")
-            .arg("1")
-            .arg("-fflags")
-            .arg("+genpts");
-    }
-
-    command
-        .arg("-f")
-        .arg("rawvideo")
-        .arg("-pix_fmt")
-        .arg("rgba")
-        .arg("-video_size")
-        .arg(format!("{width}x{height}"))
-        .arg("-framerate")
-        .arg(PREVIEW_FRAMERATE.to_string())
-        .arg("-i")
-        .arg("pipe:0");
-    command
-}
-
-pub fn detect_audio_sources() -> Vec<AudioSourceOption> {
-    let output = Command::new("ffmpeg")
-        .arg("-hide_banner")
-        .arg("-sources")
-        .arg("pulse")
-        .output();
-
-    let Ok(output) = output else {
-        return default_audio_sources();
-    };
-
-    if !output.status.success() && output.stdout.is_empty() && output.stderr.is_empty() {
-        return default_audio_sources();
-    }
-
-    let mut combined = String::from_utf8_lossy(&output.stdout).to_string();
-    if !output.stderr.is_empty() {
-        if !combined.is_empty() {
-            combined.push('\n');
-        }
-        combined.push_str(&String::from_utf8_lossy(&output.stderr));
-    }
-
-    parse_audio_sources(&combined)
-}
-
-fn default_audio_sources() -> Vec<AudioSourceOption> {
-    vec![AudioSourceOption {
-        id: "default".to_string(),
-        label: "Padrao do sistema".to_string(),
-    }]
-}
-
-fn parse_audio_sources(raw: &str) -> Vec<AudioSourceOption> {
-    let mut sources = default_audio_sources();
-
-    for line in raw.lines() {
-        let trimmed = line.trim_start();
-        if trimmed.is_empty() || trimmed.starts_with("Auto-detected sources for ") {
-            continue;
-        }
-
-        let is_default = trimmed.starts_with('*');
-        let entry = trimmed.trim_start_matches('*').trim();
-        let Some((id, rest)) = entry.split_once(' ') else {
-            continue;
-        };
-        if id.ends_with(".monitor") {
-            continue;
-        }
-
-        let label = if let (Some(start), Some(end)) = (rest.find('['), rest.rfind(']')) {
-            let text = rest[(start + 1)..end].trim();
-            if is_default {
-                format!("{text} (padrao atual)")
-            } else {
-                text.to_string()
-            }
-        } else if is_default {
-            format!("{id} (padrao atual)")
-        } else {
-            id.to_string()
-        };
-
-        if !sources.iter().any(|source| source.id == id) {
-            sources.push(AudioSourceOption {
-                id: id.to_string(),
-                label,
-            });
-        }
-    }
-
-    sources
-}
-
-pub fn selected_audio_source_label(options: &[AudioSourceOption], selected_id: &str) -> String {
-    options
-        .iter()
-        .find(|option| option.id == selected_id)
-        .map(|option| option.label.clone())
-        .unwrap_or_else(|| selected_id.to_string())
-}
-
-pub fn preferred_video_encoder_backend() -> VideoEncoderBackend {
-    *VIDEO_ENCODER_BACKEND.get_or_init(detect_preferred_video_encoder_backend)
-}
-
-fn detect_preferred_video_encoder_backend() -> VideoEncoderBackend {
-    let encoders = available_ffmpeg_encoders();
-
-    if nvidia_devices_available() && ffmpeg_has_encoder(&encoders, "h264_nvenc") {
-        return VideoEncoderBackend::NvidiaNvenc;
-    }
-
-    if first_drm_render_node().is_some() && ffmpeg_has_encoder(&encoders, "h264_qsv") {
-        return VideoEncoderBackend::IntelQsv;
-    }
-
-    if first_drm_render_node().is_some() && ffmpeg_has_encoder(&encoders, "h264_vaapi") {
-        return VideoEncoderBackend::Vaapi;
-    }
-
-    VideoEncoderBackend::CpuX264
-}
-
-fn available_ffmpeg_encoders() -> String {
-    let output = Command::new("ffmpeg")
-        .arg("-hide_banner")
-        .arg("-encoders")
-        .output();
-
-    let Ok(output) = output else {
-        return String::new();
-    };
-
-    let mut combined = String::from_utf8_lossy(&output.stdout).to_string();
-    if !output.stderr.is_empty() {
-        if !combined.is_empty() {
-            combined.push('\n');
-        }
-        combined.push_str(&String::from_utf8_lossy(&output.stderr));
-    }
-
-    combined
-}
-
-fn ffmpeg_has_encoder(encoders_output: &str, encoder_name: &str) -> bool {
-    encoders_output
-        .lines()
-        .map(str::trim)
-        .any(|line| line.split_whitespace().any(|token| token == encoder_name))
-}
-
-fn nvidia_devices_available() -> bool {
-    Path::new("/dev/nvidia0").exists() && Path::new("/dev/nvidiactl").exists()
-}
-
-fn first_drm_render_node() -> Option<&'static str> {
-    DRM_RENDER_NODES
-        .into_iter()
-        .find(|path| Path::new(path).exists())
-}
-
 fn write_photo_from_frame(frame: &OwnedFrame, output_path: &Path) -> Result<(), String> {
     if frame.width == 0 || frame.height == 0 || frame.data.is_empty() {
         return Err("Ainda nao ha frame valido para salvar como foto.".to_string());
@@ -1272,126 +1009,6 @@ fn write_photo_from_frame(frame: &OwnedFrame, output_path: &Path) -> Result<(), 
     ::image::DynamicImage::ImageRgba8(image)
         .write_with_encoder(encoder)
         .map_err(|error| format!("Falha ao codificar a foto em JPEG: {error}"))
-}
-
-fn normalize_ffmpeg_stderr(raw: &[u8]) -> String {
-    String::from_utf8_lossy(raw)
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .filter(|line| !line.starts_with("libva info:"))
-        .collect::<Vec<_>>()
-        .join("; ")
-}
-
-fn spawn_video_recorder(
-    output_path: PathBuf,
-    width: usize,
-    height: usize,
-    record_audio: bool,
-    audio_source: &str,
-    event_tx: SyncSender<WorkerEvent>,
-) -> Result<RecorderHandle, String> {
-    let (frame_sender, frame_receiver) = mpsc::sync_channel::<Vec<u8>>(4);
-    let backend = preferred_video_encoder_backend();
-    let mut child = ffmpeg_rawvideo_command(width, height, true, backend);
-    if record_audio {
-        child
-            .arg("-thread_queue_size")
-            .arg("512")
-            .arg("-f")
-            .arg("pulse")
-            .arg("-i")
-            .arg(if audio_source.trim().is_empty() {
-                "default"
-            } else {
-                audio_source
-            });
-    } else {
-        child.arg("-an");
-    }
-
-    backend.add_video_output_args(&mut child);
-
-    if record_audio {
-        child
-            .arg("-af")
-            .arg("aresample=async=1:first_pts=0")
-            .arg("-c:a")
-            .arg("aac")
-            .arg("-b:a")
-            .arg("160k")
-            .arg("-shortest");
-    }
-
-    child
-        .arg(&output_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped());
-
-    let mut child = child
-        .spawn()
-        .map_err(|error| format!("Falha ao iniciar o ffmpeg para video: {error}"))?;
-    let mut stdin = child
-        .stdin
-        .take()
-        .ok_or_else(|| "O ffmpeg nao abriu stdin para a gravacao.".to_string())?;
-
-    let finished_output = output_path.clone();
-    thread::spawn(move || {
-        let mut write_error = String::new();
-        for frame in frame_receiver {
-            if let Err(error) = stdin.write_all(&frame) {
-                write_error = format!("Falha ao enviar frame para o ffmpeg: {error}");
-                break;
-            }
-        }
-        drop(stdin);
-
-        let result = child.wait_with_output();
-        let (success, stderr) = match result {
-            Ok(output) => {
-                let ffmpeg_stderr = normalize_ffmpeg_stderr(&output.stderr);
-                let had_write_error = !write_error.is_empty();
-                let stderr = if !output.status.success() && !had_write_error {
-                    ffmpeg_stderr
-                } else if !output.status.success() && ffmpeg_stderr.is_empty() {
-                    write_error
-                } else if !output.status.success() {
-                    format!("{write_error}; {ffmpeg_stderr}")
-                } else if !had_write_error {
-                    String::new()
-                } else if ffmpeg_stderr.is_empty() {
-                    write_error
-                } else {
-                    format!("{write_error}; {ffmpeg_stderr}")
-                };
-                (output.status.success() && !had_write_error, stderr)
-            }
-            Err(error) => (
-                false,
-                if write_error.is_empty() {
-                    format!("Falha ao finalizar o ffmpeg: {error}")
-                } else {
-                    format!("{write_error}; falha ao finalizar o ffmpeg: {error}")
-                },
-            ),
-        };
-
-        let _ = event_tx.send(WorkerEvent::RecordingFinished {
-            success,
-            output_path: finished_output,
-            stderr,
-        });
-    });
-
-    Ok(RecorderHandle {
-        width,
-        height,
-        backend,
-        frame_sender,
-    })
 }
 
 pub fn normalize_countdown_seconds(value: u32) -> u32 {
@@ -1422,54 +1039,6 @@ fn synthetic_smoke_frame() -> OwnedFrame {
     }
 
     OwnedFrame { width, height, data }
-}
-
-fn write_smoke_video(frame: &OwnedFrame, output_path: &Path) -> Result<(), String> {
-    let backend = VideoEncoderBackend::CpuX264;
-    let mut child = ffmpeg_rawvideo_command(frame.width, frame.height, false, backend);
-    child.arg("-an");
-    backend.add_video_output_args(&mut child);
-    child
-        .arg(output_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped());
-
-    let mut child = child
-        .spawn()
-        .map_err(|error| format!("Falha ao iniciar ffmpeg no smoke test: {error}"))?;
-    let mut stdin = child
-        .stdin
-        .take()
-        .ok_or_else(|| "O ffmpeg nao abriu stdin no smoke test.".to_string())?;
-
-    for _ in 0..30 {
-        stdin
-            .write_all(&frame.data)
-            .map_err(|error| format!("Falha ao alimentar o ffmpeg no smoke test: {error}"))?;
-    }
-    drop(stdin);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|error| format!("Falha ao finalizar o ffmpeg no smoke test: {error}"))?;
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(command_stderr_or(
-            &output.stderr,
-            "ffmpeg falhou no smoke test de video.",
-        ))
-    }
-}
-
-fn command_stderr_or(output: &[u8], fallback: &str) -> String {
-    let stderr = String::from_utf8_lossy(output).trim().to_string();
-    if stderr.is_empty() {
-        fallback.to_string()
-    } else {
-        stderr
-    }
 }
 
 pub fn run_smoke_test(config_path: &Path) -> Result<(), String> {
@@ -1627,7 +1196,7 @@ mod tests {
 
     #[test]
     fn normalize_ffmpeg_stderr_ignores_libva_info() {
-        let normalized = normalize_ffmpeg_stderr(
+        let normalized = media::ffmpeg::normalize_ffmpeg_stderr(
             b"libva info: VA-API version 1.23.0\nreal warning\nlibva info: driver loaded\n",
         );
         assert_eq!(normalized, "real warning");
