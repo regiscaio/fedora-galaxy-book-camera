@@ -1,5 +1,20 @@
 # Galaxy Book Camera
 
+## Instalação rápida
+
+Para instalar o app a partir do repositório DNF público:
+
+```bash
+sudo dnf config-manager addrepo --from-repofile=https://packages.caioregis.com/fedora/caioregis.repo
+sudo dnf install galaxybook-camera akmod-galaxybook-ov02c10
+```
+
+Se você também quiser o auxiliar gráfico de instalação e diagnóstico:
+
+```bash
+sudo dnf install galaxybook-setup
+```
+
 <p align="center">
   <img src="assets/galaxybook-camera.svg" alt="Ícone do Galaxy Book Camera" width="112">
 </p>
