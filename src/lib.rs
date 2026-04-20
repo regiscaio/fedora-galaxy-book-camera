@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::Write;
-use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{
@@ -12,7 +10,6 @@ use std::sync::{
 use std::thread;
 use std::time::{Duration, Instant};
 
-use chrono::Local;
 use libcamera::{
     camera::{ActiveCamera, CameraConfigurationStatus},
     camera_manager::CameraManager,
@@ -23,27 +20,30 @@ use libcamera::{
     request::{Request, ReuseFlag},
     stream::{Stream, StreamRole},
 };
+
+mod app;
+
+pub use app::localization::{
+    localized_app_name,
+    localized_app_name_for_locale,
+    localized_camera_word_for_locale,
+};
+pub use app::paths::{default_config_path, photo_library_dir, timestamp, video_library_dir};
+pub use app::singleton::{setup_singleton, SingletonState};
+pub(crate) use app::paths::home_dir;
+
 pub const APP_ID: &str = "com.caioregis.GalaxyBookCamera";
 pub const APP_NAME: &str = "Galaxy Book Camera";
-const CONFIG_PATH_RELATIVE: &str = ".config/camera-tuned.env";
 const LOCAL_TUNING_PATH_RELATIVE: &str = ".local/share/galaxybook-camera/libcamera/simple/ov02c10.yaml";
 const DEV_TUNING_PATH_RELATIVE: &str = "data/libcamera/simple/ov02c10.yaml";
 const SYSTEM_TUNING_PATH: &str = "/usr/share/galaxybook-camera/libcamera/simple/ov02c10.yaml";
 const LIBCAMERA_SIMPLE_TUNING_ENV: &str = "LIBCAMERA_SIMPLE_TUNING_FILE";
 const COUNTDOWN_OPTIONS: [u32; 3] = [0, 3, 10];
-const SNAPSHOT_DESKTOP_CANDIDATES: [&str; 4] = [
-    "/usr/share/applications/org.gnome.Snapshot.desktop",
-    "/usr/local/share/applications/org.gnome.Snapshot.desktop",
-    "/var/lib/flatpak/exports/share/applications/org.gnome.Snapshot.desktop",
-    ".local/share/flatpak/exports/share/applications/org.gnome.Snapshot.desktop",
-];
 const PREVIEW_FRAMERATE: u32 = 30;
-const CAMERA_LIBRARY_DIRNAME: &str = "Camera";
 const MAX_PREVIEW_LONG_EDGE: usize = 1280;
 const STILL_CAPTURE_WARMUP_FRAMES: u32 = 6;
 const DRM_RENDER_NODES: [&str; 2] = ["/dev/dri/renderD128", "/dev/dri/renderD129"];
 static VIDEO_ENCODER_BACKEND: OnceLock<VideoEncoderBackend> = OnceLock::new();
-static SNAPSHOT_CAMERA_TRANSLATIONS: OnceLock<HashMap<String, String>> = OnceLock::new();
 static PREVIEW_RESOLUTION_OPTIONS: OnceLock<Vec<ResolutionOption>> = OnceLock::new();
 static PREVIEW_ZOOM_OPTIONS: OnceLock<Vec<PreviewZoomOption>> = OnceLock::new();
 const PREVIEW_ZOOM_PRESETS: [(f64, &str); 5] = [
@@ -219,130 +219,6 @@ pub fn preview_zoom_options() -> &'static [PreviewZoomOption] {
     PREVIEW_ZOOM_OPTIONS
         .get_or_init(derived_preview_zoom_options)
         .as_slice()
-}
-
-fn first_locale_candidate(locale_value: &str) -> Option<&str> {
-    locale_value
-        .split(':')
-        .map(str::trim)
-        .find(|candidate| !candidate.is_empty() && *candidate != "C" && *candidate != "POSIX")
-}
-
-fn locale_language_and_region(locale: &str) -> (String, Option<String>) {
-    let normalized = locale
-        .split(['.', '@'])
-        .next()
-        .unwrap_or(locale)
-        .replace('-', "_");
-    let mut parts = normalized.split('_');
-    let language = parts.next().unwrap_or_default().to_ascii_lowercase();
-    let region = parts.next().map(|value| value.to_ascii_lowercase());
-    (language, region)
-}
-
-fn parse_snapshot_name_translations(contents: &str) -> HashMap<String, String> {
-    let mut translations = HashMap::new();
-
-    for line in contents.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-
-        let Some((key, value)) = line.split_once('=') else {
-            continue;
-        };
-        if key == "Name" {
-            translations.insert(String::new(), value.to_string());
-            continue;
-        }
-        if let Some(locale) = key.strip_prefix("Name[").and_then(|value| value.strip_suffix(']'))
-        {
-            translations.insert(locale.to_ascii_lowercase(), value.to_string());
-        }
-    }
-
-    translations
-}
-
-fn snapshot_camera_translations() -> &'static HashMap<String, String> {
-    SNAPSHOT_CAMERA_TRANSLATIONS.get_or_init(|| {
-        for candidate in SNAPSHOT_DESKTOP_CANDIDATES {
-            let path = if candidate.starts_with('.') {
-                match env::var("HOME") {
-                    Ok(home) => PathBuf::from(home).join(candidate),
-                    Err(_) => continue,
-                }
-            } else {
-                PathBuf::from(candidate)
-            };
-
-            if let Ok(contents) = fs::read_to_string(&path) {
-                let parsed = parse_snapshot_name_translations(&contents);
-                if !parsed.is_empty() {
-                    return parsed;
-                }
-            }
-        }
-
-        HashMap::new()
-    })
-}
-
-fn translated_name_from_map(map: &HashMap<String, String>, locale: &str) -> Option<String> {
-    if map.is_empty() {
-        return None;
-    }
-
-    let (language, region) = locale_language_and_region(locale);
-    let normalized = match region {
-        Some(region) => format!("{language}_{region}"),
-        None => language.clone(),
-    };
-
-    map.get(&normalized)
-        .cloned()
-        .or_else(|| map.get(&language).cloned())
-        .or_else(|| map.get("").cloned())
-}
-
-fn fallback_camera_word_for_locale(locale: &str) -> &'static str {
-    let (language, region) = locale_language_and_region(locale);
-    match language.as_str() {
-        "pt" => "Câmera",
-        "es" => "Cámara",
-        "fr" => "Caméra",
-        "de" => "Kamera",
-        "it" => "Fotocamera",
-        "ja" => "カメラ",
-        "ko" => "카메라",
-        "ru" | "uk" => "Камера",
-        "zh" => match region.as_deref() {
-            Some("tw" | "hk" | "mo") => "相機",
-            _ => "相机",
-        },
-        _ => "Camera",
-    }
-}
-
-pub fn localized_camera_word_for_locale(locale: &str) -> String {
-    translated_name_from_map(snapshot_camera_translations(), locale)
-        .unwrap_or_else(|| fallback_camera_word_for_locale(locale).to_string())
-}
-
-pub fn localized_app_name_for_locale(locale: &str) -> String {
-    format!("Galaxy Book {}", localized_camera_word_for_locale(locale))
-}
-
-pub fn localized_app_name() -> String {
-    for key in ["LC_MESSAGES", "LC_ALL", "LANGUAGE", "LANG"] {
-        if let Ok(value) = env::var(key) {
-            if let Some(locale) = first_locale_candidate(&value) {
-                return localized_app_name_for_locale(locale);
-            }
-        }
-    }
-    APP_NAME.to_string()
 }
 
 #[derive(Clone, Copy)]
@@ -2009,120 +1885,6 @@ fn spawn_video_recorder(
     })
 }
 
-pub fn photo_library_dir() -> PathBuf {
-    default_user_dir("PICTURES")
-        .unwrap_or_else(|| home_dir().join("Pictures"))
-        .join(CAMERA_LIBRARY_DIRNAME)
-}
-
-pub fn video_library_dir() -> PathBuf {
-    default_user_dir("VIDEOS")
-        .unwrap_or_else(|| home_dir().join("Videos"))
-        .join(CAMERA_LIBRARY_DIRNAME)
-}
-
-fn cache_dir() -> PathBuf {
-    std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| home_dir().join(".cache"))
-}
-
-fn singleton_socket_path() -> PathBuf {
-    if let Some(runtime_dir) = std::env::var_os("XDG_RUNTIME_DIR") {
-        let runtime_dir = PathBuf::from(runtime_dir);
-        if !runtime_dir.as_os_str().is_empty() {
-            return runtime_dir.join("galaxybook-camera.sock");
-        }
-    }
-
-    cache_dir().join("galaxybook-camera.sock")
-}
-
-pub struct SingletonState {
-    pub signal_rx: Receiver<()>,
-    pub socket_path: PathBuf,
-}
-
-pub fn setup_singleton() -> Result<Option<SingletonState>, String> {
-    let socket_path = singleton_socket_path();
-    if let Some(parent) = socket_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|error| format!("Falha ao preparar a pasta do singleton: {error}"))?;
-    }
-
-    if UnixStream::connect(&socket_path).is_ok() {
-        return Ok(None);
-    }
-
-    if socket_path.exists() {
-        let _ = fs::remove_file(&socket_path);
-    }
-
-    let listener = UnixListener::bind(&socket_path)
-        .map_err(|error| format!("Falha ao criar o socket singleton do app: {error}"))?;
-    let (signal_tx, signal_rx) = mpsc::channel();
-    let listener_socket_path = socket_path.clone();
-
-    thread::spawn(move || {
-        for stream in listener.incoming() {
-            match stream {
-                Ok(_) => {
-                    let _ = signal_tx.send(());
-                }
-                Err(error) => {
-                    if error.kind() == std::io::ErrorKind::WouldBlock {
-                        continue;
-                    }
-                    break;
-                }
-            }
-        }
-        let _ = fs::remove_file(listener_socket_path);
-    });
-
-    Ok(Some(SingletonState {
-        signal_rx,
-        socket_path,
-    }))
-}
-
-fn home_dir() -> PathBuf {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("/tmp"))
-}
-
-fn default_user_dir(kind: &str) -> Option<PathBuf> {
-    let env_name = match kind {
-        "PICTURES" => "XDG_PICTURES_DIR",
-        "VIDEOS" => "XDG_VIDEOS_DIR",
-        _ => return None,
-    };
-
-    if let Some(path) = std::env::var_os(env_name) {
-        let path = PathBuf::from(path);
-        if !path.as_os_str().is_empty() {
-            return Some(path);
-        }
-    }
-
-    let output = Command::new("xdg-user-dir").arg(kind).output().ok()?;
-    if !output.status.success() {
-        return None;
-    }
-
-    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if path.is_empty() {
-        None
-    } else {
-        Some(PathBuf::from(path))
-    }
-}
-
-pub fn timestamp() -> String {
-    Local::now().format("%Y%m%d-%H%M%S").to_string()
-}
-
 pub fn normalize_countdown_seconds(value: u32) -> u32 {
     if COUNTDOWN_OPTIONS.contains(&value) {
         value
@@ -2161,10 +1923,6 @@ fn parse_countdown_seconds(value: &str, fallback: u32) -> u32 {
         .parse::<u32>()
         .map(normalize_countdown_seconds)
         .unwrap_or(fallback)
-}
-
-pub fn default_config_path() -> PathBuf {
-    home_dir().join(CONFIG_PATH_RELATIVE)
 }
 
 fn synthetic_smoke_frame() -> OwnedFrame {
@@ -2436,7 +2194,7 @@ mod tests {
     #[test]
     fn localized_app_name_uses_first_language_candidate() {
         assert_eq!(
-            first_locale_candidate("C:pt_BR.UTF-8:en_US.UTF-8"),
+            app::localization::first_locale_candidate("C:pt_BR.UTF-8:en_US.UTF-8"),
             Some("pt_BR.UTF-8")
         );
     }
