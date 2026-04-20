@@ -1,5 +1,6 @@
 pub mod builders;
 pub mod styles;
+pub mod window;
 
 pub use builders::{
     build_about_details_subpage,
@@ -13,3 +14,4 @@ pub use builders::{
     ControlWidgets,
 };
 pub use styles::{apply_application_css, draw_preview_grid};
+pub use window::CameraWindow;
