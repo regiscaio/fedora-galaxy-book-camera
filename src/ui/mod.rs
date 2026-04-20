@@ -1,13 +1,12 @@
+pub mod about;
 pub mod builders;
 pub mod styles;
 pub mod window;
 
+pub use about::present_about_dialog;
 pub use builders::{
-    build_about_details_subpage,
-    build_about_summary_row,
     build_control_widgets,
     build_sidebar,
-    build_suffix_action_row,
     build_zoom_selector,
     selected_audio_index,
     set_scale_value,
