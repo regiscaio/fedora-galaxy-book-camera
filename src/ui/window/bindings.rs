@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::sync::mpsc::{Receiver, TryRecvError};
 use std::time::Duration;
 
+use galaxybook_camera::preview_zoom_options;
 use gtk::glib::{self, ControlFlow};
 use gtk::prelude::*;
 use galaxybook_camera::Preset;
