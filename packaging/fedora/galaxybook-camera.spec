@@ -71,12 +71,3 @@ APP_VERSION_OVERRIDE=%{version} cargo --offline test --locked --lib --bin galaxy
 %{_datadir}/metainfo/%{app_id}.metainfo.xml
 
 %changelog
-* Mon Apr 20 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-3
-- Add an explicit GPL-2.0-only license to the project and package metadata
-- Add multilingual README variants and language navigation links
-
-* Mon Apr 20 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-2
-- Improve color neutrality in deep shadows and highlight extremes
-
-* Sun Apr 19 2026 Caio Régis <regiscaio@users.noreply.github.com> - 1.0.0-1
-- Start the stable RPM line at 1.0.0
