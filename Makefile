@@ -3,13 +3,15 @@ SHELL := /usr/bin/env bash
 APP_ID := com.caioregis.GalaxyBookCamera
 BIN := galaxybook-camera
 PACKAGE_NAME := galaxybook-camera
-VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml)
+VERSION_SCRIPT := ./scripts/package-version.sh
+VERSION := $(shell $(VERSION_SCRIPT))
 IMAGE_NAME := localhost/galaxybook-camera-builder:fedora44
 CACHE_ROOT ?= $(HOME)/.cache/galaxybook-camera-rust
 CARGO_REGISTRY_CACHE := $(CACHE_ROOT)/cargo-registry
 CARGO_GIT_CACHE := $(CACHE_ROOT)/cargo-git
 DIST_DIR := dist
 RPM_SPEC := packaging/fedora/$(PACKAGE_NAME).spec
+RPM_VERSION_DEFINE := --define "pkg_version_override $(VERSION)"
 PO_LANGS := en es it
 POT_FILE := po/$(PACKAGE_NAME).pot
 I18N_SOURCES := $(shell find src -name '*.rs' -print | sort)
@@ -34,7 +36,7 @@ help:
 build:
 	@set -euo pipefail; \
 	if command -v cargo >/dev/null 2>&1 && command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libcamera gtk4 libadwaita-1; then \
-		cargo build --release --bin $(BIN); \
+		APP_VERSION_OVERRIDE="$(VERSION)" cargo build --release --bin $(BIN); \
 	else \
 		mkdir -p "$(CARGO_REGISTRY_CACHE)" "$(CARGO_GIT_CACHE)"; \
 		podman build -t "$(IMAGE_NAME)" -f Containerfile .; \
@@ -46,6 +48,7 @@ build:
 			-v "$(CARGO_GIT_CACHE):/cargo/git:Z" \
 			-w /workspace \
 			-e CARGO_HOME=/cargo \
+			-e APP_VERSION_OVERRIDE="$(VERSION)" \
 			"$(IMAGE_NAME)" \
 			/bin/bash --noprofile --norc -lc 'cargo build --manifest-path Cargo.toml --release --bin $(BIN)'; \
 	fi
@@ -53,7 +56,7 @@ build:
 test:
 	@set -euo pipefail; \
 	if command -v cargo >/dev/null 2>&1 && command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libcamera gtk4 libadwaita-1; then \
-		cargo test --manifest-path Cargo.toml --lib --bin $(BIN); \
+		APP_VERSION_OVERRIDE="$(VERSION)" cargo test --manifest-path Cargo.toml --lib --bin $(BIN); \
 	else \
 		mkdir -p "$(CARGO_REGISTRY_CACHE)" "$(CARGO_GIT_CACHE)"; \
 		podman build -t "$(IMAGE_NAME)" -f Containerfile .; \
@@ -66,6 +69,7 @@ test:
 			-w /workspace \
 			-e CARGO_HOME=/cargo \
 			-e CARGO_TARGET_DIR=/tmp/galaxybook-target \
+			-e APP_VERSION_OVERRIDE="$(VERSION)" \
 			"$(IMAGE_NAME)" \
 			/bin/bash --noprofile --norc -lc 'cargo test --manifest-path Cargo.toml --lib --bin $(BIN)'; \
 	fi
@@ -114,7 +118,7 @@ srpm: dist
 			mkdir -p "$$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
 			cp "$(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION).tar.gz" "$$TOPDIR/SOURCES/"; \
 			cp "$(RPM_SPEC)" "$$TOPDIR/SPECS/"; \
-			rpmbuild -bs "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR"; \
+			rpmbuild -bs "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR" $(RPM_VERSION_DEFINE); \
 			cp "$$TOPDIR"/SRPMS/*.src.rpm /workspace/$(DIST_DIR)/; \
 		'
 
@@ -134,7 +138,7 @@ rpm: dist
 			mkdir -p "$$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
 			cp "$(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION).tar.gz" "$$TOPDIR/SOURCES/"; \
 			cp "$(RPM_SPEC)" "$$TOPDIR/SPECS/"; \
-			rpmbuild -ba "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR"; \
+			rpmbuild -ba "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR" $(RPM_VERSION_DEFINE); \
 			cp "$$TOPDIR"/SRPMS/*.src.rpm /workspace/$(DIST_DIR)/; \
 			find "$$TOPDIR/RPMS" -type f -name "*.rpm" -exec cp {} /workspace/$(DIST_DIR)/ \; ; \
 		'

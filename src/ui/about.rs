@@ -245,7 +245,7 @@ fn build_about_summary_row(app_name: &str) -> gtk::ListBoxRow {
         "<span alpha='55%' size='small'>{}</span>",
         glib::markup_escape_text(&trf(
             "Versão {version}",
-            &[("version", env!("CARGO_PKG_VERSION").to_string())],
+            &[("version", env!("APP_VERSION").to_string())],
         ))
     ));
     version_label.set_xalign(0.0);
@@ -286,7 +286,7 @@ fn build_about_details_subpage() -> adw::NavigationPage {
 
     for (title, subtitle) in [
         (tr("Nome"), localized_app_name()),
-        (tr("Versão"), env!("CARGO_PKG_VERSION").to_string()),
+        (tr("Versão"), env!("APP_VERSION").to_string()),
         (tr("App ID"), APP_ID.to_string()),
         (tr("Desktop ID"), format!("{APP_ID}.desktop")),
     ] {
