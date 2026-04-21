@@ -34,5 +34,5 @@ Type=Application
 Terminal=false
 StartupNotify=true
 StartupWMClass=@STARTUP_WM_CLASS@
-Categories=AudioVideo;Video;Photography;
+Categories=Graphics;Photography;
 Keywords=Camera;Webcam;Photo;Video;Libcamera;

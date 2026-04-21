@@ -42,8 +42,8 @@ install -Dm644 assets/galaxybook-camera.svg %{buildroot}%{_datadir}/icons/hicolo
 install -Dm644 assets/camera-timer-symbolic.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/actions/camera-timer-symbolic.svg
 install -Dm644 data/libcamera/simple/ov02c10.yaml %{buildroot}%{_datadir}/galaxybook-camera/libcamera/simple/ov02c10.yaml
 for lang in en es it; do \
-  install -d %{buildroot}%{_datadir}/locale/$$lang/LC_MESSAGES; \
-  msgfmt po/$$lang.po -o %{buildroot}%{_datadir}/locale/$$lang/LC_MESSAGES/%{name}.mo; \
+  install -d %{buildroot}%{_datadir}/locale/${lang}/LC_MESSAGES; \
+  msgfmt po/${lang}.po -o %{buildroot}%{_datadir}/locale/${lang}/LC_MESSAGES/%{name}.mo; \
 done
 sed \
   -e 's|@EXEC@|galaxybook-camera|g' \
