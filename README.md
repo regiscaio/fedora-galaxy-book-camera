@@ -36,6 +36,16 @@ Este repositório cobre apenas o **lado userspace**: interface, captura de
 foto, gravação de vídeo e ajustes de imagem. O módulo do kernel fica em um
 repositório separado.
 
+## Interface atual
+
+### Tela principal
+
+![Galaxy Book Camera — tela principal](img/app-camera-galaxy-1.png)
+
+### Modal `Sobre`
+
+![Galaxy Book Camera — Sobre](img/app-camera-galaxy-2.png)
+
 ## Status atual
 
 No estado validado em abril de 2026, o app já cobre o fluxo principal de câmera

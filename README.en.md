@@ -36,6 +36,16 @@ This repository only covers the **userspace side**: interface, still capture,
 video recording, and image controls. The kernel module lives in a separate
 repository.
 
+## Current interface
+
+### Main screen
+
+![Galaxy Book Camera — main screen](img/app-camera-galaxy-1.png)
+
+### `About` modal
+
+![Galaxy Book Camera — About](img/app-camera-galaxy-2.png)
+
 ## Current status
 
 As validated in April 2026, the app already covers the main camera workflow on
