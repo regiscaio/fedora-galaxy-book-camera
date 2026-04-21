@@ -1,5 +1,6 @@
 %global app_id com.caioregis.GalaxyBookCamera
 %global pkg_version %{?pkg_version_override}%{!?pkg_version_override:1.0.0}
+%global source_date_epoch_from_changelog 0
 
 Name:           galaxybook-camera
 Version:        %{pkg_version}
