@@ -4,7 +4,10 @@ APP_ID := com.caioregis.GalaxyBookCamera
 BIN := galaxybook-camera
 PACKAGE_NAME := galaxybook-camera
 VERSION_SCRIPT := ./scripts/package-version.sh
+SOURCE_DATE_EPOCH_SCRIPT := ./scripts/source-date-epoch.sh
 VERSION := $(shell $(VERSION_SCRIPT))
+SOURCE_DATE_EPOCH := $(shell $(SOURCE_DATE_EPOCH_SCRIPT))
+export SOURCE_DATE_EPOCH
 IMAGE_NAME := localhost/galaxybook-camera-builder:fedora44
 CACHE_ROOT ?= $(HOME)/.cache/galaxybook-camera-rust
 CARGO_REGISTRY_CACHE := $(CACHE_ROOT)/cargo-registry
@@ -12,6 +15,7 @@ CARGO_GIT_CACHE := $(CACHE_ROOT)/cargo-git
 DIST_DIR := dist
 RPM_SPEC := packaging/fedora/$(PACKAGE_NAME).spec
 RPM_VERSION_DEFINE := --define "pkg_version_override $(VERSION)"
+TAR_REPRO_FLAGS := --sort=name --mtime="@$(SOURCE_DATE_EPOCH)" --owner=0 --group=0 --numeric-owner
 PO_LANGS := en es it
 POT_FILE := po/$(PACKAGE_NAME).pot
 I18N_SOURCES := $(shell find src -name '*.rs' -print | sort)
@@ -49,6 +53,7 @@ build:
 			-w /workspace \
 			-e CARGO_HOME=/cargo \
 			-e APP_VERSION_OVERRIDE="$(VERSION)" \
+			-e SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 			"$(IMAGE_NAME)" \
 			/bin/bash --noprofile --norc -lc 'cargo build --manifest-path Cargo.toml --release --bin $(BIN)'; \
 	fi
@@ -70,6 +75,7 @@ test:
 			-e CARGO_HOME=/cargo \
 			-e CARGO_TARGET_DIR=/tmp/galaxybook-target \
 			-e APP_VERSION_OVERRIDE="$(VERSION)" \
+			-e SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 			"$(IMAGE_NAME)" \
 			/bin/bash --noprofile --norc -lc 'cargo test --manifest-path Cargo.toml --lib --bin $(BIN)'; \
 	fi
@@ -98,6 +104,7 @@ dist: vendor
 		--exclude='./.git' \
 		--exclude='./target' \
 		--exclude='./dist' \
+		$(TAR_REPRO_FLAGS) \
 		--transform='s,^\./,$(PACKAGE_NAME)-$(VERSION)/,' \
 		-czf $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION).tar.gz \
 		.
@@ -111,6 +118,7 @@ srpm: dist
 		--user "$$(id -u):$$(id -g)" \
 		-v "$$(pwd):/workspace:Z" \
 		-w /workspace \
+		-e SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 		"$(IMAGE_NAME)" \
 		/bin/bash --noprofile --norc -lc '\
 			set -euo pipefail; \
@@ -131,6 +139,7 @@ rpm: dist
 		--user "$$(id -u):$$(id -g)" \
 		-v "$$(pwd):/workspace:Z" \
 		-w /workspace \
+		-e SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 		"$(IMAGE_NAME)" \
 		/bin/bash --noprofile --norc -lc '\
 			set -euo pipefail; \

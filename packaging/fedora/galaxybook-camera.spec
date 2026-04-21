@@ -1,13 +1,14 @@
 %global app_id com.caioregis.GalaxyBookCamera
 %global pkg_version %{?pkg_version_override}%{!?pkg_version_override:1.0.0}
 %global source_date_epoch_from_changelog 0
+%global clamp_mtime_to_source_date_epoch 1
 
 Name:           galaxybook-camera
 Version:        %{pkg_version}
 Release:        1%{?dist}
 Summary:        Native libcamera camera app for Galaxy Book on Fedora
 
-License:        GPL-2.0-only
+License:        GPL-3.0-only
 URL:            https://github.com/regiscaio/fedora-galaxy-book-camera
 Source0:        %{name}-%{version}.tar.gz
 

@@ -270,5 +270,5 @@ Arquivos relevantes:
 
 ## Licença
 
-Este projeto é distribuído sob a licença **GPL-2.0-only**. Veja o arquivo
+Este projeto é distribuído sob a licença **GPL-3.0-only**. Veja o arquivo
 [LICENSE](LICENSE).

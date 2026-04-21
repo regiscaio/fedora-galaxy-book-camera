@@ -255,4 +255,4 @@ Relevant files:
 
 ## License
 
-This project is distributed under **GPL-2.0-only**. See [LICENSE](LICENSE).
+This project is distributed under **GPL-3.0-only**. See [LICENSE](LICENSE).

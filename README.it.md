@@ -202,4 +202,4 @@ make rpm
 
 ## Licenza
 
-Questo progetto è distribuito con licenza **GPL-2.0-only**. Vedi [LICENSE](LICENSE).
+Questo progetto è distribuito con licenza **GPL-3.0-only**. Vedi [LICENSE](LICENSE).
