@@ -86,6 +86,7 @@ smoke-test: build
 vendor:
 	@set -euo pipefail; \
 	mkdir -p .cargo "$(CARGO_REGISTRY_CACHE)" "$(CARGO_GIT_CACHE)"; \
+	tmp_config="$$(mktemp .cargo/config.XXXXXX.toml)"; \
 	podman build -t "$(IMAGE_NAME)" -f Containerfile .; \
 	podman run --rm \
 		--userns=keep-id \
@@ -96,18 +97,23 @@ vendor:
 		-w /workspace \
 		-e CARGO_HOME=/cargo \
 		"$(IMAGE_NAME)" \
-		/bin/bash --noprofile --norc -lc 'cargo vendor vendor > .cargo/config.toml'
+		/bin/bash --noprofile --norc -lc 'cargo vendor --manifest-path /workspace/Cargo.toml vendor' > "$$tmp_config"; \
+	mv "$$tmp_config" .cargo/config.toml
 
 dist: vendor
-	mkdir -p $(DIST_DIR)
+	@set -euo pipefail; \
+	mkdir -p $(DIST_DIR); \
+	manifest="$$(mktemp)"; \
+	trap 'rm -f "$$manifest"' EXIT; \
+	git ls-files -z > "$$manifest"; \
+	printf '.cargo/config.toml\0' >> "$$manifest"; \
+	find vendor -type f -print0 >> "$$manifest"; \
 	tar \
-		--exclude='./.git' \
-		--exclude='./target' \
-		--exclude='./dist' \
 		$(TAR_REPRO_FLAGS) \
-		--transform='s,^\./,$(PACKAGE_NAME)-$(VERSION)/,' \
+		--null \
+		--transform='s,^,$(PACKAGE_NAME)-$(VERSION)/,' \
 		-czf $(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION).tar.gz \
-		.
+		-T "$$manifest"
 
 srpm: dist
 	@set -euo pipefail; \
