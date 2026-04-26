@@ -12,6 +12,7 @@ mod app;
 mod camera;
 mod image;
 mod media;
+mod updates;
 
 pub use app::config::{CameraConfig, Preset};
 pub use app::localization::{
@@ -33,6 +34,7 @@ pub use media::audio::{
     AudioSourceOption,
 };
 pub use media::ffmpeg::{preferred_video_encoder_backend, VideoEncoderBackend};
+pub use updates::{install_package_updates, package_update_names};
 pub(crate) use app::paths::home_dir;
 pub(crate) use camera::capture::{
     capture_photo_max_resolution_with_manager,

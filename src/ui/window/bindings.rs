@@ -35,6 +35,13 @@ impl CameraWindow {
             }
         });
 
+        self.update_button.connect_clicked({
+            let app = Rc::clone(self);
+            move |_| {
+                app.install_updates();
+            }
+        });
+
         let show_settings_action = gtk::gio::SimpleAction::new("show-settings", None);
         show_settings_action.connect_activate({
             let app = Rc::clone(self);

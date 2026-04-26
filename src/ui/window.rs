@@ -2,6 +2,7 @@ mod bindings;
 mod capture;
 mod events;
 mod lifecycle;
+mod updates;
 
 use self::lifecycle::apply_validated_startup_resolution;
 use std::cell::{Cell, RefCell};
@@ -85,6 +86,7 @@ pub struct CameraWindow {
     countdown_overlay_label: gtk::Label,
     grid_overlay: gtk::DrawingArea,
     preview_button: gtk::Button,
+    update_button: gtk::Button,
     countdown_button: gtk::MenuButton,
     countdown_off_button: gtk::CheckButton,
     countdown_three_button: gtk::CheckButton,
@@ -143,6 +145,13 @@ impl CameraWindow {
             .build();
         settings_button.add_css_class("flat");
 
+        let update_button = gtk::Button::builder()
+            .icon_name("software-update-available-symbolic")
+            .tooltip_text(tr("Baixar e instalar atualizações disponíveis"))
+            .visible(false)
+            .build();
+        update_button.add_css_class("flat");
+
         let countdown_box = gtk::Box::new(Orientation::Vertical, 6);
         countdown_box.set_margin_top(12);
         countdown_box.set_margin_bottom(12);
@@ -178,6 +187,7 @@ impl CameraWindow {
         header_bar.pack_start(&preview_button);
         header_bar.set_title_widget(Some(&title_widget));
         header_bar.pack_end(&settings_button);
+        header_bar.pack_end(&update_button);
         header_bar.pack_end(&countdown_button);
 
         let picture = gtk::Picture::new();
@@ -328,6 +338,7 @@ impl CameraWindow {
             countdown_overlay_label,
             grid_overlay,
             preview_button,
+            update_button,
             countdown_button,
             countdown_off_button,
             countdown_three_button,
@@ -357,6 +368,7 @@ impl CameraWindow {
         app.refresh_countdown_controls();
         app.refresh_capture_controls();
         app.bind_ui(event_rx, singleton.signal_rx);
+        app.refresh_updates();
 
         app
     }
