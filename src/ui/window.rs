@@ -90,6 +90,7 @@ pub struct CameraWindow {
     countdown_button: gtk::MenuButton,
     countdown_off_button: gtk::CheckButton,
     countdown_three_button: gtk::CheckButton,
+    countdown_five_button: gtk::CheckButton,
     countdown_ten_button: gtk::CheckButton,
     zoom_button: gtk::Button,
     zoom_strip: gtk::Box,
@@ -170,6 +171,10 @@ impl CameraWindow {
         let countdown_three_button = gtk::CheckButton::with_label("3s");
         countdown_three_button.set_group(Some(&countdown_off_button));
         countdown_box.append(&countdown_three_button);
+
+        let countdown_five_button = gtk::CheckButton::with_label("5s");
+        countdown_five_button.set_group(Some(&countdown_off_button));
+        countdown_box.append(&countdown_five_button);
 
         let countdown_ten_button = gtk::CheckButton::with_label("10s");
         countdown_ten_button.set_group(Some(&countdown_off_button));
@@ -342,6 +347,7 @@ impl CameraWindow {
             countdown_button,
             countdown_off_button,
             countdown_three_button,
+            countdown_five_button,
             countdown_ten_button,
             zoom_button,
             zoom_strip,
@@ -393,6 +399,7 @@ impl CameraWindow {
             &self.controls,
             &self.countdown_off_button,
             &self.countdown_three_button,
+            &self.countdown_five_button,
             &self.countdown_ten_button,
             &self.zoom_button,
             &self.zoom_label,

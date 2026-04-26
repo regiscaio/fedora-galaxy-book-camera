@@ -84,13 +84,13 @@ pub(crate) struct RecorderHandle {
 }
 
 impl RecorderHandle {
-    pub(crate) fn try_send_frame(&self, frame: &OwnedFrame) {
+    pub(crate) fn try_send_frame(&self, frame: &OwnedFrame) -> bool {
         if frame.width != self.width || frame.height != self.height {
-            return;
+            return false;
         }
 
         let data = frame.data.clone();
-        let _ = self.frame_sender.try_send(data);
+        self.frame_sender.try_send(data).is_ok()
     }
 }
 

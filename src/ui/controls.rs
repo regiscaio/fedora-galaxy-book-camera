@@ -124,6 +124,7 @@ pub fn sync_controls_from_state(
     controls: &ControlWidgets,
     countdown_off_button: &gtk::CheckButton,
     countdown_three_button: &gtk::CheckButton,
+    countdown_five_button: &gtk::CheckButton,
     countdown_ten_button: &gtk::CheckButton,
     zoom_button: &gtk::Button,
     zoom_label: &gtk::Label,
@@ -146,6 +147,7 @@ pub fn sync_controls_from_state(
     ));
     countdown_off_button.set_active(state.config.countdown_seconds == 0);
     countdown_three_button.set_active(state.config.countdown_seconds == 3);
+    countdown_five_button.set_active(state.config.countdown_seconds == 5);
     countdown_ten_button.set_active(state.config.countdown_seconds == 10);
 
     set_scale_value(

@@ -196,6 +196,7 @@ impl CameraWindow {
         self.syncing_ui.set(true);
         self.countdown_off_button.set_active(seconds == 0);
         self.countdown_three_button.set_active(seconds == 3);
+        self.countdown_five_button.set_active(seconds == 5);
         self.countdown_ten_button.set_active(seconds == 10);
         self.syncing_ui.set(false);
         self.refresh_countdown_controls();

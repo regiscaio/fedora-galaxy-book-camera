@@ -2,6 +2,8 @@ use std::process::{Command, Stdio};
 
 use crate::{tr, trf};
 
+const DNF_COMMAND: &str = "/usr/bin/dnf";
+
 fn command_output_text(stdout: &[u8], stderr: &[u8]) -> String {
     let mut text = String::new();
     text.push_str(&String::from_utf8_lossy(stdout));
@@ -66,7 +68,7 @@ pub fn package_update_names(packages: &[&str]) -> Result<Vec<String>, String> {
         .map(String::as_str)
         .collect::<Vec<_>>();
 
-    let output = Command::new("dnf")
+    let output = Command::new(DNF_COMMAND)
         .arg("-q")
         .arg("check-update")
         .args(&installed_package_refs)
@@ -103,7 +105,7 @@ pub fn install_package_updates(packages: &[&str]) -> Result<String, String> {
         .collect::<Vec<_>>();
 
     let output = Command::new("pkexec")
-        .arg("dnf")
+        .arg(DNF_COMMAND)
         .arg("upgrade")
         .arg("-y")
         .args(&installed_package_refs)

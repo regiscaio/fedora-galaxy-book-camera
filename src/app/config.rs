@@ -3,6 +3,8 @@ use std::path::Path;
 
 use crate::{normalize_countdown_seconds, preview_zoom_options, tr};
 
+const CONFIG_VALUE_MAX_LEN: usize = 240;
+
 #[derive(Clone, Copy)]
 pub enum Preset {
     Natural,
@@ -134,13 +136,38 @@ impl CameraConfig {
             }
         }
 
+        config.sanitize();
         config
+    }
+
+    pub fn sanitize(&mut self) {
+        let defaults = Self::default();
+
+        self.softisp_mode = sanitize_single_line(&self.softisp_mode, &defaults.softisp_mode);
+        self.countdown_seconds = normalize_countdown_seconds(self.countdown_seconds);
+        self.brightness = clamp_finite(self.brightness, -0.20, 0.25, defaults.brightness);
+        self.exposure_value =
+            clamp_finite(self.exposure_value, -0.50, 1.00, defaults.exposure_value);
+        self.contrast = clamp_finite(self.contrast, 0.50, 2.00, defaults.contrast);
+        self.saturation = clamp_finite(self.saturation, 0.00, 2.20, defaults.saturation);
+        self.hue = clamp_finite(self.hue, -1.00, 1.00, defaults.hue);
+        self.temperature = clamp_finite(self.temperature, -1.00, 1.00, defaults.temperature);
+        self.tint = clamp_finite(self.tint, -1.00, 1.00, defaults.tint);
+        self.red_gain = clamp_finite(self.red_gain, 0.50, 1.50, defaults.red_gain);
+        self.green_gain = clamp_finite(self.green_gain, 0.50, 1.50, defaults.green_gain);
+        self.blue_gain = clamp_finite(self.blue_gain, 0.50, 1.50, defaults.blue_gain);
+        self.gamma = clamp_finite(self.gamma, 0.50, 1.80, defaults.gamma);
+        self.sharpness = clamp_finite(self.sharpness, 1.00, 2.00, defaults.sharpness);
+        self.audio_source = sanitize_single_line(&self.audio_source, &defaults.audio_source);
     }
 
     pub fn save(&self, path: &Path) -> Result<(), String> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|err| err.to_string())?;
         }
+
+        let mut config = self.clone();
+        config.sanitize();
 
         let text = format!(
             "# Camera tuning used by:\n\
@@ -165,26 +192,26 @@ impl CameraConfig {
              CAMERA_SHARPNESS={sharpness:.2}\n\
              CAMERA_RECORD_AUDIO={record_audio}\n\
              CAMERA_AUDIO_SOURCE={audio_source}\n",
-            softisp_mode = self.softisp_mode,
-            width = self.width.map(|value| value.to_string()).unwrap_or_default(),
-            height = self.height.map(|value| value.to_string()).unwrap_or_default(),
-            countdown_seconds = normalize_countdown_seconds(self.countdown_seconds),
-            show_grid = self.show_grid,
-            mirror = self.mirror,
-            brightness = self.brightness,
-            exposure_value = self.exposure_value,
-            contrast = self.contrast,
-            saturation = self.saturation,
-            hue = self.hue,
-            temperature = self.temperature,
-            tint = self.tint,
-            red_gain = self.red_gain,
-            green_gain = self.green_gain,
-            blue_gain = self.blue_gain,
-            gamma = self.gamma,
-            sharpness = self.sharpness,
-            record_audio = self.record_audio,
-            audio_source = self.audio_source,
+            softisp_mode = config.softisp_mode,
+            width = config.width.map(|value| value.to_string()).unwrap_or_default(),
+            height = config.height.map(|value| value.to_string()).unwrap_or_default(),
+            countdown_seconds = config.countdown_seconds,
+            show_grid = config.show_grid,
+            mirror = config.mirror,
+            brightness = config.brightness,
+            exposure_value = config.exposure_value,
+            contrast = config.contrast,
+            saturation = config.saturation,
+            hue = config.hue,
+            temperature = config.temperature,
+            tint = config.tint,
+            red_gain = config.red_gain,
+            green_gain = config.green_gain,
+            blue_gain = config.blue_gain,
+            gamma = config.gamma,
+            sharpness = config.sharpness,
+            record_audio = config.record_audio,
+            audio_source = config.audio_source,
         );
 
         fs::write(path, text).map_err(|err| err.to_string())
@@ -268,7 +295,12 @@ fn parse_optional_u32(value: &str) -> Option<u32> {
 }
 
 fn parse_f64(value: &str, fallback: f64) -> f64 {
-    value.trim().parse().unwrap_or(fallback)
+    value
+        .trim()
+        .parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())
+        .unwrap_or(fallback)
 }
 
 fn parse_bool(value: &str, fallback: bool) -> bool {
@@ -285,4 +317,83 @@ fn parse_countdown_seconds(value: &str, fallback: u32) -> u32 {
         .parse::<u32>()
         .map(normalize_countdown_seconds)
         .unwrap_or(fallback)
+}
+
+fn clamp_finite(value: f64, min: f64, max: f64, fallback: f64) -> f64 {
+    if value.is_finite() {
+        value.clamp(min, max)
+    } else {
+        fallback
+    }
+}
+
+fn sanitize_single_line(value: &str, fallback: &str) -> String {
+    let sanitized = value
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .chars()
+        .filter(|ch| !ch.is_control())
+        .take(CONFIG_VALUE_MAX_LEN)
+        .collect::<String>();
+
+    if sanitized.is_empty() {
+        fallback.to_string()
+    } else {
+        sanitized
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_rejects_non_finite_values_and_clamps_to_ui_ranges() {
+        let mut config = CameraConfig {
+            brightness: f64::NAN,
+            exposure_value: 9.0,
+            contrast: -4.0,
+            saturation: 8.0,
+            hue: -8.0,
+            temperature: 4.0,
+            tint: f64::INFINITY,
+            red_gain: 0.0,
+            green_gain: 3.0,
+            blue_gain: f64::NEG_INFINITY,
+            gamma: 0.0,
+            sharpness: 9.0,
+            ..CameraConfig::default()
+        };
+
+        config.sanitize();
+
+        assert_eq!(config.brightness, CameraConfig::default().brightness);
+        assert_eq!(config.exposure_value, 1.0);
+        assert_eq!(config.contrast, 0.5);
+        assert_eq!(config.saturation, 2.2);
+        assert_eq!(config.hue, -1.0);
+        assert_eq!(config.temperature, 1.0);
+        assert_eq!(config.tint, CameraConfig::default().tint);
+        assert_eq!(config.red_gain, 0.5);
+        assert_eq!(config.green_gain, 1.5);
+        assert_eq!(config.blue_gain, CameraConfig::default().blue_gain);
+        assert_eq!(config.gamma, 0.5);
+        assert_eq!(config.sharpness, 2.0);
+    }
+
+    #[test]
+    fn sanitize_keeps_config_values_single_line() {
+        let mut config = CameraConfig {
+            softisp_mode: " cpu\nCAMERA_BRIGHTNESS=9 ".to_string(),
+            audio_source: " default\nCAMERA_RECORD_AUDIO=false ".to_string(),
+            ..CameraConfig::default()
+        };
+
+        config.sanitize();
+
+        assert_eq!(config.softisp_mode, "cpu");
+        assert_eq!(config.audio_source, "default");
+    }
 }

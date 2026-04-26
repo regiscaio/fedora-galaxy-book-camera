@@ -36,7 +36,10 @@ use crate::{
     CameraConfig,
     OwnedFrame,
     RecorderHandle,
+    PREVIEW_FRAMERATE,
 };
+
+const RECORDING_DROP_STATUS_INTERVAL: u32 = PREVIEW_FRAMERATE * 2;
 
 pub enum WorkerCommand {
     StartPreview,
@@ -89,6 +92,7 @@ struct PreviewSession<'a> {
     profile: AdjustmentProfile,
     recorder: Option<RecorderHandle>,
     pending_recording_output: Option<PathBuf>,
+    dropped_recording_frames: u32,
     last_fps: f32,
     fps_window_started: Instant,
     fps_window_frames: u32,
@@ -449,6 +453,7 @@ fn start_preview_session<'a>(
         profile: AdjustmentProfile::new(config),
         recorder: None,
         pending_recording_output: None,
+        dropped_recording_frames: 0,
         last_fps: 0.0,
         fps_window_started: Instant::now(),
         fps_window_frames: 0,
@@ -457,6 +462,7 @@ fn start_preview_session<'a>(
 
 fn stop_preview_session(session: &mut PreviewSession<'_>) {
     session.pending_recording_output = None;
+    session.dropped_recording_frames = 0;
     if let Some(recorder) = session.recorder.take() {
         drop(recorder);
     }
@@ -498,9 +504,9 @@ fn process_completed_request(
                 event_tx.clone(),
             ) {
                 Ok(recorder) => {
-                    recorder.try_send_frame(&output_frame);
                     let backend_label = recorder.backend.ui_label();
                     session.recorder = Some(recorder);
+                    session.dropped_recording_frames = 0;
                     let _ = event_tx.send(WorkerEvent::Status(trf(
                         "Gravando vídeo em {output_path} usando {backend_label}.",
                         &[
@@ -516,7 +522,17 @@ fn process_completed_request(
         }
 
         if let Some(recorder) = session.recorder.as_ref() {
-            recorder.try_send_frame(&output_frame);
+            if !recorder.try_send_frame(&output_frame) {
+                session.dropped_recording_frames += 1;
+                if session.dropped_recording_frames == 1
+                    || session.dropped_recording_frames % RECORDING_DROP_STATUS_INTERVAL == 0
+                {
+                    let _ = event_tx.send(WorkerEvent::Status(trf(
+                        "O encoder de vídeo está atrasado; {frames} frame(s) foram ignorados para manter a gravação responsiva.",
+                        &[("frames", session.dropped_recording_frames.to_string())],
+                    )));
+                }
+            }
         }
 
         output_frame.scaled_nearest(preview_width, preview_height)

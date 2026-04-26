@@ -53,7 +53,7 @@ const LOCAL_TUNING_PATH_RELATIVE: &str = ".local/share/galaxybook-camera/libcame
 const DEV_TUNING_PATH_RELATIVE: &str = "data/libcamera/simple/ov02c10.yaml";
 const SYSTEM_TUNING_PATH: &str = "/usr/share/galaxybook-camera/libcamera/simple/ov02c10.yaml";
 const LIBCAMERA_SIMPLE_TUNING_ENV: &str = "LIBCAMERA_SIMPLE_TUNING_FILE";
-const COUNTDOWN_OPTIONS: [u32; 3] = [0, 3, 10];
+const COUNTDOWN_OPTIONS: [u32; 4] = [0, 3, 5, 10];
 const PREVIEW_FRAMERATE: u32 = 30;
 const MAX_PREVIEW_LONG_EDGE: usize = 1280;
 const STILL_CAPTURE_WARMUP_FRAMES: u32 = 6;
@@ -630,8 +630,9 @@ mod tests {
     fn normalize_countdown_seconds_accepts_snapshot_values() {
         assert_eq!(normalize_countdown_seconds(0), 0);
         assert_eq!(normalize_countdown_seconds(3), 3);
+        assert_eq!(normalize_countdown_seconds(5), 5);
         assert_eq!(normalize_countdown_seconds(10), 10);
-        assert_eq!(normalize_countdown_seconds(5), 0);
+        assert_eq!(normalize_countdown_seconds(7), 0);
     }
 
     #[test]

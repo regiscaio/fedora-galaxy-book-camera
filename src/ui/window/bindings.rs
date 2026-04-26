@@ -64,6 +64,7 @@ impl CameraWindow {
         for (button, seconds) in [
             (&self.countdown_off_button, 0_u32),
             (&self.countdown_three_button, 3_u32),
+            (&self.countdown_five_button, 5_u32),
             (&self.countdown_ten_button, 10_u32),
         ] {
             button.connect_toggled({
