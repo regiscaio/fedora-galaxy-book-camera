@@ -14,7 +14,6 @@ CARGO_REGISTRY_CACHE := $(CACHE_ROOT)/cargo-registry
 CARGO_GIT_CACHE := $(CACHE_ROOT)/cargo-git
 DIST_DIR := dist
 RPM_SPEC := packaging/fedora/$(PACKAGE_NAME).spec
-RPM_VERSION_DEFINE := --define "pkg_version_override $(VERSION)"
 TAR_REPRO_FLAGS := --sort=name --mtime="@$(SOURCE_DATE_EPOCH)" --owner=0 --group=0 --numeric-owner
 PO_LANGS := en es it
 POT_FILE := po/$(PACKAGE_NAME).pot
@@ -131,8 +130,8 @@ srpm: dist
 			TOPDIR=/tmp/rpmbuild; \
 			mkdir -p "$$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
 			cp "$(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION).tar.gz" "$$TOPDIR/SOURCES/"; \
-			cp "$(RPM_SPEC)" "$$TOPDIR/SPECS/"; \
-			rpmbuild -bs "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR" $(RPM_VERSION_DEFINE); \
+			sed -e "s/^Version:[[:space:]].*/Version:        $(VERSION)/" "$(RPM_SPEC)" > "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec"; \
+			rpmbuild -bs "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR"; \
 			cp "$$TOPDIR"/SRPMS/*.src.rpm /workspace/$(DIST_DIR)/; \
 		'
 
@@ -152,8 +151,8 @@ rpm: dist
 			TOPDIR=/tmp/rpmbuild; \
 			mkdir -p "$$TOPDIR"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}; \
 			cp "$(DIST_DIR)/$(PACKAGE_NAME)-$(VERSION).tar.gz" "$$TOPDIR/SOURCES/"; \
-			cp "$(RPM_SPEC)" "$$TOPDIR/SPECS/"; \
-			rpmbuild -ba "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR" $(RPM_VERSION_DEFINE); \
+			sed -e "s/^Version:[[:space:]].*/Version:        $(VERSION)/" "$(RPM_SPEC)" > "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec"; \
+			rpmbuild -ba "$$TOPDIR/SPECS/$(PACKAGE_NAME).spec" --define "_topdir $$TOPDIR"; \
 			cp "$$TOPDIR"/SRPMS/*.src.rpm /workspace/$(DIST_DIR)/; \
 			find "$$TOPDIR/RPMS" -type f -name "*.rpm" -exec cp {} /workspace/$(DIST_DIR)/ \; ; \
 		'
