@@ -190,7 +190,7 @@ fn build_uri_row(
     build_suffix_action_row(
         title,
         uri,
-        "send-to-symbolic",
+        "adw-external-link-symbolic",
         &tr("Abrir link"),
         move || {
             let launcher = gtk::UriLauncher::new(uri);
