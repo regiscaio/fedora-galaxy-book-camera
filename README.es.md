@@ -17,14 +17,11 @@ Para instalar la app desde el repositorio DNF público:
 
 ```bash
 sudo dnf config-manager addrepo --from-repofile=https://packages.caioregis.com/fedora/caioregis.repo
-sudo dnf install galaxybook-camera akmod-galaxybook-ov02c10
+sudo dnf install galaxybook-camera galaxybook-setup
 ```
 
-Si también quieres el asistente gráfico de instalación y diagnóstico:
-
-```bash
-sudo dnf install galaxybook-setup
-```
+La app sigue siendo independiente del driver; usa Galaxy Book Setup para
+aprovisionar y validar la cámara interna.
 
 `Galaxy Book Camera` es una app de cámara para Fedora en portátiles Samsung
 Galaxy Book, con foco actual en el **Galaxy Book4 Ultra**. La app usa
@@ -48,7 +45,7 @@ repositorio separado.
 
 ## Estado actual
 
-En el estado validado en abril de 2026, la app ya cubre el flujo principal de
+En el estado validado en agosto de 2026, la app ya cubre el flujo principal de
 cámara en el Galaxy Book4 Ultra:
 
 - vista previa directa vía `libcamera`;
@@ -86,7 +83,7 @@ En este hardware, la webcam depende de una combinación más sensible entre:
 
 - driver `ov02c10` fuera de la ruta in-tree pura del kernel;
 - stack Intel IPU6;
-- `libcamera`;
+- `libcamera` y el paquete de módulos IPA `libcamera-ipa`;
 - bridge para navegador y comunicadores cuando hace falta.
 
 En la práctica, la ruta genérica del escritorio no siempre era el mejor lugar
@@ -135,15 +132,15 @@ Este proyecto **no** ofrece:
 Para que la app funcione en este hardware, el sistema necesita tener:
 
 - `libcamera`;
+- `libcamera-ipa`;
 - `GTK4` y `libadwaita`;
-- `ffmpeg-free` de Fedora o `ffmpeg` de RPM Fusion;
-- el driver empaquetado en `fedora-galaxy-book-ov02c10`.
+- `ffmpeg-free` de Fedora o `ffmpeg` de RPM Fusion.
 
-En la práctica, la instalación más segura para usuarios de Fedora es instalar
-el conjunto del driver con `akmod`:
-
-- `galaxybook-ov02c10-kmod-common`
-- `akmod-galaxybook-ov02c10`
+El RPM de esta app es únicamente de espacio de usuario: no instala, actualiza ni
+reconcilia el driver del kernel. Para usar la cámara interna en este hardware,
+**Galaxy Book Setup** debe aprovisionar y validar `ov02c10`/`akmods`. Sin ese
+paso, la app sigue siendo instalable y comprobable, pero el sensor interno puede
+no enumerarse.
 
 ## Instalación para usuarios
 
@@ -154,34 +151,26 @@ público:
 
 ```bash
 sudo dnf config-manager addrepo --from-repofile=https://packages.caioregis.com/fedora/caioregis.repo
-sudo dnf install galaxybook-camera akmod-galaxybook-ov02c10
+sudo dnf install galaxybook-camera galaxybook-setup
 ```
 
-Si también quieres el flujo asistido de reparación, validación y webcam para
-navegador:
-
-```bash
-sudo dnf install galaxybook-setup
-```
+Abre Galaxy Book Setup para completar el aprovisionamiento, la reparación y la
+reconciliación del driver de la cámara interna; reinicia cuando lo solicite. El
+botón de actualización de la cámara actualiza únicamente `galaxybook-camera`.
 
 ### Vía RPM local
 
-Si los RPM fueron generados localmente, instala primero los paquetes del
-driver y, a continuación, la app:
+Si el RPM de la app fue generado localmente, puede instalarse de forma
+independiente:
 
 ```bash
-sudo dnf install \
-  /ruta/a/galaxybook-ov02c10-kmod-common-*.rpm \
-  /ruta/a/akmod-galaxybook-ov02c10-*.rpm \
-  /ruta/a/galaxybook-camera-*.rpm
-sudo reboot
+sudo dnf install /ruta/a/galaxybook-camera-*.rpm
 ```
 
-En el primer arranque después de la instalación, `akmods` debe compilar e
-instalar el módulo del kernel automáticamente. Si `Secure Boot` está
-habilitado, el flujo de firma de módulos vía `akmods` debe estar configurado
-correctamente en el sistema. De lo contrario, el módulo puede compilarse pero
-no cargarse en el arranque.
+Para la cámara interna, instala y ejecuta Galaxy Book Setup por separado. Tras
+el aprovisionamiento, `akmods` debe compilar e instalar el módulo del kernel. Si
+`Secure Boot` está habilitado, la firma vía `akmods` debe estar configurada; de
+lo contrario, el módulo puede compilarse pero no cargarse en el arranque.
 
 Si la cámara sigue fallando después del reinicio, los checks más útiles son:
 
@@ -205,8 +194,12 @@ Comportamiento actual:
 - las fotos se guardan en `XDG_PICTURES_DIR/Camera`;
 - los vídeos se guardan en `XDG_VIDEOS_DIR/Camera`;
 - la cámara se accede directamente vía `libcamera`, sin depender de Snapshot;
-- la app inyecta un tuning file propio para el sensor `ov02c10` en el `simple
-  IPA` de `libcamera`, para evitar el fallback totalmente `uncalibrated`;
+- el RPM instala el tuning del sensor en
+  `/usr/share/libcamera/ipa/simple/ov02c10.yaml`, la ruta global del `simple
+  IPA`;
+- si la cámara aún no está registrada al abrir la app, la vista previa la
+  reenumera con backoff limitado a `5s`; **Detener vista previa** cancela la
+  espera inmediatamente y un nuevo inicio reinicia el ciclo;
 - el preset `Natural` y el baseline por defecto usan un ajuste leve y
   calibrado para acercar el color al camino de webcam del sistema sin perder
   el detalle del `libcamera` directo;
@@ -245,6 +238,10 @@ claras:
 - `fedora-galaxy-book-ov02c10`: módulo del kernel y empaquetado `akmod`;
 - `fedora-galaxy-book-camera`: app GNOME y empaquetado RPM del userspace.
 
+El botón de actualización de esta app actualiza solo `galaxybook-camera`. La
+instalación, reparación y actualización del driver corresponden a `Galaxy
+Book Setup`, que puede validar juntos el módulo y el kernel activo.
+
 ## Build y empaquetado
 
 Dependencias de build en Fedora:
@@ -261,10 +258,17 @@ Comandos principales:
 ```bash
 make build
 make test
+make self-test
+make smoke-test
 make dist
 make srpm
 make rpm
 ```
+
+`make self-test` valida configuración, imagen y vídeo con un frame sintético y
+no requiere cámara. `make smoke-test` es la prueba de salud del hardware:
+falla cuando no se enumera ninguna cámara y exige adquisición, configuración y
+captura reales con timeout.
 
 El binario generado localmente queda en:
 
