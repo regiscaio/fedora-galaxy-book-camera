@@ -20,17 +20,18 @@ pub fn refresh_preview_chrome(
     grid_overlay: &gtk::DrawingArea,
     preview_button: &gtk::Button,
     preview_active: bool,
+    preview_requested: bool,
     countdown_active: bool,
     show_grid: bool,
 ) {
     placeholder.set_visible(!preview_active && !countdown_active);
-    grid_overlay.set_visible(show_grid);
-    preview_button.set_icon_name(if preview_active {
+    grid_overlay.set_visible(show_grid && preview_active);
+    preview_button.set_icon_name(if preview_requested {
         "media-playback-stop-symbolic"
     } else {
         "media-playback-start-symbolic"
     });
-    let tooltip = if preview_active {
+    let tooltip = if preview_requested {
         tr("Parar preview")
     } else {
         tr("Iniciar preview")

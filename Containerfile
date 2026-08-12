@@ -1,6 +1,7 @@
 FROM registry.fedoraproject.org/fedora:44
 
 RUN dnf install -y \
+    appstream \
     cargo \
     rust \
     rpm-build \

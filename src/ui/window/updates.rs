@@ -9,11 +9,7 @@ use libadwaita::prelude::*;
 
 use super::CameraWindow;
 
-const CAMERA_UPDATE_PACKAGES: &[&str] = &[
-    "galaxybook-camera",
-    "galaxybook-ov02c10-kmod-common",
-    "akmod-galaxybook-ov02c10",
-];
+const CAMERA_UPDATE_PACKAGES: &[&str] = &["galaxybook-camera"];
 
 fn update_button_tooltip(packages: &[String]) -> String {
     trf(

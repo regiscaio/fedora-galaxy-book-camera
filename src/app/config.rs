@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::{normalize_countdown_seconds, preview_zoom_options, tr};
+use crate::{normalize_countdown_seconds, normalize_softisp_mode, preview_zoom_options, tr};
 
 const CONFIG_VALUE_MAX_LEN: usize = 240;
 
@@ -143,7 +143,10 @@ impl CameraConfig {
     pub fn sanitize(&mut self) {
         let defaults = Self::default();
 
-        self.softisp_mode = sanitize_single_line(&self.softisp_mode, &defaults.softisp_mode);
+        self.softisp_mode = normalize_softisp_mode(&sanitize_single_line(
+            &self.softisp_mode,
+            &defaults.softisp_mode,
+        ));
         self.countdown_seconds = normalize_countdown_seconds(self.countdown_seconds);
         self.brightness = clamp_finite(self.brightness, -0.20, 0.25, defaults.brightness);
         self.exposure_value =
@@ -395,5 +398,22 @@ mod tests {
 
         assert_eq!(config.softisp_mode, "cpu");
         assert_eq!(config.audio_source, "default");
+    }
+
+    #[test]
+    fn sanitize_accepts_gpu_and_rejects_unknown_softisp_modes() {
+        let mut gpu = CameraConfig {
+            softisp_mode: " GPU ".to_string(),
+            ..CameraConfig::default()
+        };
+        gpu.sanitize();
+        assert_eq!(gpu.softisp_mode, "gpu");
+
+        let mut unknown = CameraConfig {
+            softisp_mode: "automatic".to_string(),
+            ..CameraConfig::default()
+        };
+        unknown.sanitize();
+        assert_eq!(unknown.softisp_mode, "cpu");
     }
 }

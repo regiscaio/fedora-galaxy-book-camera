@@ -11,6 +11,7 @@ impl CameraWindow {
             WorkerEvent::PreviewStarted { width, height } => {
                 let mut state = self.state.borrow_mut();
                 state.preview_active = true;
+                state.preview_requested = true;
                 state.preview_size = Some((width, height));
                 state.status = trf(
                     "Preview ativo em {width}x{height}.",
@@ -27,9 +28,26 @@ impl CameraWindow {
             WorkerEvent::PreviewStopped { reason } => {
                 let mut state = self.state.borrow_mut();
                 state.preview_active = false;
+                state.preview_requested = false;
                 state.is_recording = false;
                 state.fps = 0.0;
                 state.status = state.post_stop_status.take().unwrap_or(reason);
+                drop(state);
+                self.picture.set_paintable(Option::<&gdk::Paintable>::None);
+                self.status_label.set_label(&self.state.borrow().status);
+                self.refresh_preview_chrome();
+                self.refresh_capture_controls();
+                self.refresh_header_metrics();
+            }
+            WorkerEvent::PreviewRetrying { reason } => {
+                self.cancel_countdown(None);
+                let mut state = self.state.borrow_mut();
+                state.preview_active = false;
+                state.preview_requested = true;
+                state.is_recording = false;
+                state.fps = 0.0;
+                state.preview_size = None;
+                state.status = reason;
                 drop(state);
                 self.picture.set_paintable(Option::<&gdk::Paintable>::None);
                 self.status_label.set_label(&self.state.borrow().status);
@@ -85,6 +103,11 @@ impl CameraWindow {
                         true,
                     );
                 }
+            }
+            WorkerEvent::RecordingStartFailed { reason } => {
+                self.state.borrow_mut().is_recording = false;
+                self.refresh_capture_controls();
+                self.set_status(&reason, true);
             }
             WorkerEvent::RecordingFinished {
                 success,

@@ -19,13 +19,14 @@ PO_LANGS := en es it
 POT_FILE := po/$(PACKAGE_NAME).pot
 I18N_SOURCES := $(shell find src -name '*.rs' -print | sort)
 
-.PHONY: help build test smoke-test vendor dist srpm rpm install-local i18n-extract i18n-update i18n-validate clean
+.PHONY: help build test self-test smoke-test vendor dist srpm rpm install-local i18n-extract i18n-update i18n-validate clean
 
 help:
 	@printf '%s\n' \
 		'make build           Build release binary' \
 		'make test            Run unit tests' \
-		'make smoke-test      Run the app smoke test' \
+		'make self-test       Run the synthetic app self-test' \
+		'make smoke-test      Run the physical camera smoke test' \
 		'make vendor          Vendor Rust crates for offline RPM builds' \
 		'make i18n-extract    Generate gettext template in po/' \
 		'make i18n-update     Merge current sources into po/*.po' \
@@ -39,7 +40,7 @@ help:
 build:
 	@set -euo pipefail; \
 	if command -v cargo >/dev/null 2>&1 && command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libcamera gtk4 libadwaita-1; then \
-		APP_VERSION_OVERRIDE="$(VERSION)" cargo build --release --bin $(BIN); \
+		APP_VERSION_OVERRIDE="$(VERSION)" cargo build --locked --release --bin $(BIN); \
 	else \
 		mkdir -p "$(CARGO_REGISTRY_CACHE)" "$(CARGO_GIT_CACHE)"; \
 		podman build -t "$(IMAGE_NAME)" -f Containerfile .; \
@@ -54,13 +55,13 @@ build:
 			-e APP_VERSION_OVERRIDE="$(VERSION)" \
 			-e SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 			"$(IMAGE_NAME)" \
-			/bin/bash --noprofile --norc -lc 'cargo build --manifest-path Cargo.toml --release --bin $(BIN)'; \
+			/bin/bash --noprofile --norc -lc 'cargo build --locked --manifest-path Cargo.toml --release --bin $(BIN)'; \
 	fi
 
 test:
 	@set -euo pipefail; \
 	if command -v cargo >/dev/null 2>&1 && command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libcamera gtk4 libadwaita-1; then \
-		APP_VERSION_OVERRIDE="$(VERSION)" cargo test --manifest-path Cargo.toml --lib --bin $(BIN); \
+		APP_VERSION_OVERRIDE="$(VERSION)" cargo test --locked --manifest-path Cargo.toml --lib --bin $(BIN); \
 	else \
 		mkdir -p "$(CARGO_REGISTRY_CACHE)" "$(CARGO_GIT_CACHE)"; \
 		podman build -t "$(IMAGE_NAME)" -f Containerfile .; \
@@ -76,8 +77,11 @@ test:
 			-e APP_VERSION_OVERRIDE="$(VERSION)" \
 			-e SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 			"$(IMAGE_NAME)" \
-			/bin/bash --noprofile --norc -lc 'cargo test --manifest-path Cargo.toml --lib --bin $(BIN)'; \
+			/bin/bash --noprofile --norc -lc 'cargo test --locked --manifest-path Cargo.toml --lib --bin $(BIN)'; \
 	fi
+
+self-test: build
+	./target/release/$(BIN) --self-test
 
 smoke-test: build
 	./target/release/$(BIN) --smoke-test
@@ -96,7 +100,7 @@ vendor:
 		-w /workspace \
 		-e CARGO_HOME=/cargo \
 		"$(IMAGE_NAME)" \
-		/bin/bash --noprofile --norc -lc 'cargo vendor --manifest-path /workspace/Cargo.toml vendor' > "$$tmp_config"; \
+		/bin/bash --noprofile --norc -lc 'cargo vendor --locked --manifest-path /workspace/Cargo.toml vendor' > "$$tmp_config"; \
 	mv "$$tmp_config" .cargo/config.toml
 
 dist: vendor

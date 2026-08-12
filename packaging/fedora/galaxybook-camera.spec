@@ -14,6 +14,7 @@ Source0:        %{name}-%{version}.tar.gz
 
 ExclusiveArch:  x86_64
 
+BuildRequires:  appstream
 BuildRequires:  cargo
 BuildRequires:  clang
 BuildRequires:  desktop-file-utils
@@ -26,7 +27,10 @@ BuildRequires:  pkgconfig(libcamera)
 BuildRequires:  rust
 
 Requires:       (ffmpeg-free or ffmpeg)
-Requires:       akmod-galaxybook-ov02c10 >= 1.0.0
+Requires:       dnf5
+Requires:       libcamera-ipa%{?_isa}
+Requires:       polkit
+Requires:       rpm
 
 %description
 Galaxy Book Camera is a native GTK4 and libadwaita camera app for Fedora on
@@ -43,7 +47,7 @@ APP_VERSION_OVERRIDE=%{version} cargo --offline build --release --locked --bin g
 install -Dm755 target/release/galaxybook-camera %{buildroot}%{_bindir}/galaxybook-camera
 install -Dm644 assets/galaxybook-camera.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
 install -Dm644 assets/camera-timer-symbolic.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/actions/camera-timer-symbolic.svg
-install -Dm644 data/libcamera/simple/ov02c10.yaml %{buildroot}%{_datadir}/galaxybook-camera/libcamera/simple/ov02c10.yaml
+install -Dm644 data/libcamera/simple/ov02c10.yaml %{buildroot}%{_datadir}/libcamera/ipa/simple/ov02c10.yaml
 for lang in en es it; do \
   install -d %{buildroot}%{_datadir}/locale/${lang}/LC_MESSAGES; \
   msgfmt po/${lang}.po -o %{buildroot}%{_datadir}/locale/${lang}/LC_MESSAGES/%{name}.mo; \
@@ -58,6 +62,8 @@ install -Dm644 data/%{app_id}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{ap
 
 %check
 desktop-file-validate %{app_id}.desktop
+appstreamcli validate --no-net data/%{app_id}.metainfo.xml
+make i18n-validate
 APP_VERSION_OVERRIDE=%{version} cargo --offline test --locked --lib --bin galaxybook-camera
 
 %files
@@ -66,7 +72,7 @@ APP_VERSION_OVERRIDE=%{version} cargo --offline test --locked --lib --bin galaxy
 %{_datadir}/applications/%{app_id}.desktop
 %{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
 %{_datadir}/icons/hicolor/scalable/actions/camera-timer-symbolic.svg
-%{_datadir}/galaxybook-camera/libcamera/simple/ov02c10.yaml
+%{_datadir}/libcamera/ipa/simple/ov02c10.yaml
 %{_datadir}/locale/en/LC_MESSAGES/%{name}.mo
 %{_datadir}/locale/es/LC_MESSAGES/%{name}.mo
 %{_datadir}/locale/it/LC_MESSAGES/%{name}.mo

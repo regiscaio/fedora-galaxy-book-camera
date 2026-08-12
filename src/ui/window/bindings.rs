@@ -27,7 +27,7 @@ impl CameraWindow {
             let app = Rc::clone(self);
             move |_| {
                 app.cancel_countdown(None);
-                if app.state.borrow().preview_active {
+                if app.state.borrow().preview_requested {
                     app.stop_preview();
                 } else {
                     app.start_preview();

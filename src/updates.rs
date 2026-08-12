@@ -136,7 +136,7 @@ mod tests {
     fn parses_dnf4_check_update_lines() {
         let output = "\
 galaxybook-camera.x86_64 1.1.0-1.fc44 caioregis
-akmod-galaxybook-ov02c10.x86_64 1.1.0-1.fc44 caioregis
+example-addon.x86_64 1.1.0-1.fc44 example
 unrelated.x86_64 1.0-1 fedora
 ";
         assert_eq!(
@@ -144,11 +144,11 @@ unrelated.x86_64 1.0-1 fedora
                 output,
                 &[
                     "galaxybook-camera",
-                    "akmod-galaxybook-ov02c10",
-                    "galaxybook-ov02c10-kmod-common",
+                    "example-addon",
+                    "missing-package",
                 ],
             ),
-            vec!["galaxybook-camera", "akmod-galaxybook-ov02c10"]
+            vec!["galaxybook-camera", "example-addon"]
         );
     }
 
@@ -159,7 +159,7 @@ Updating and loading repositories:
 Repositories loaded.
 Available upgrades
 Name                         Arch   Version       Repository
-galaxybook-ov02c10-kmod-common noarch 1.1.0-1.fc44 caioregis
+example-addon                 noarch 1.1.0-1.fc44 example
 galaxybook-camera            x86_64 1.1.0-1.fc44 caioregis
 ";
         assert_eq!(
@@ -167,11 +167,11 @@ galaxybook-camera            x86_64 1.1.0-1.fc44 caioregis
                 output,
                 &[
                     "galaxybook-camera",
-                    "akmod-galaxybook-ov02c10",
-                    "galaxybook-ov02c10-kmod-common",
+                    "example-addon",
+                    "missing-package",
                 ],
             ),
-            vec!["galaxybook-ov02c10-kmod-common", "galaxybook-camera"]
+            vec!["example-addon", "galaxybook-camera"]
         );
     }
 }

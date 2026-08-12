@@ -57,6 +57,7 @@ struct WindowState {
     preset_index: usize,
     capture_mode: CaptureMode,
     preview_active: bool,
+    preview_requested: bool,
     is_recording: bool,
     show_grid: bool,
     countdown_remaining: Option<u32>,
@@ -320,6 +321,7 @@ impl CameraWindow {
             preset_index: 0,
             capture_mode: CaptureMode::Photo,
             preview_active: false,
+            preview_requested: false,
             is_recording: false,
             show_grid,
             countdown_remaining: None,
@@ -416,6 +418,7 @@ impl CameraWindow {
             &self.grid_overlay,
             &self.preview_button,
             state.preview_active,
+            state.preview_requested,
             state.countdown_remaining.is_some(),
             state.show_grid,
         );

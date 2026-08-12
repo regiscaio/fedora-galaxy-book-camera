@@ -1,11 +1,16 @@
 use std::env;
+use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{OnceLock, RwLock};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+#[cfg(unix)]
+use std::os::unix::fs::DirBuilderExt;
 
 use libcamera::{
     camera_manager::CameraManager,
-    pixel_format::PixelFormat,
-    stream::StreamRole,
+    properties::Model,
 };
 
 mod app;
@@ -35,8 +40,8 @@ pub use media::audio::{
 };
 pub use media::ffmpeg::{preferred_video_encoder_backend, VideoEncoderBackend};
 pub use updates::{install_package_updates, package_update_names};
-pub(crate) use app::paths::home_dir;
 pub(crate) use camera::capture::{
+    capture_still_frame_with_manager,
     capture_photo_max_resolution_with_manager,
     write_photo_from_frame,
 };
@@ -49,17 +54,16 @@ pub(crate) use media::ffmpeg::{
 
 pub const APP_ID: &str = "com.caioregis.GalaxyBookCamera";
 pub const APP_NAME: &str = "Galaxy Book Camera";
-const LOCAL_TUNING_PATH_RELATIVE: &str = ".local/share/galaxybook-camera/libcamera/simple/ov02c10.yaml";
+#[cfg(test)]
 const DEV_TUNING_PATH_RELATIVE: &str = "data/libcamera/simple/ov02c10.yaml";
-const SYSTEM_TUNING_PATH: &str = "/usr/share/galaxybook-camera/libcamera/simple/ov02c10.yaml";
-const LIBCAMERA_SIMPLE_TUNING_ENV: &str = "LIBCAMERA_SIMPLE_TUNING_FILE";
+#[cfg(test)]
+const SYSTEM_TUNING_PATH: &str = "/usr/share/libcamera/ipa/simple/ov02c10.yaml";
 const COUNTDOWN_OPTIONS: [u32; 4] = [0, 3, 5, 10];
 const PREVIEW_FRAMERATE: u32 = 30;
 const MAX_PREVIEW_LONG_EDGE: usize = 1280;
 const STILL_CAPTURE_WARMUP_FRAMES: u32 = 6;
 const DRM_RENDER_NODES: [&str; 2] = ["/dev/dri/renderD128", "/dev/dri/renderD129"];
-static PREVIEW_RESOLUTION_OPTIONS: OnceLock<Vec<ResolutionOption>> = OnceLock::new();
-static PREVIEW_ZOOM_OPTIONS: OnceLock<Vec<PreviewZoomOption>> = OnceLock::new();
+static PREVIEW_CAPABILITIES: OnceLock<RwLock<PreviewCapabilities>> = OnceLock::new();
 const PREVIEW_ZOOM_PRESETS: [(f64, &str); 5] = [
     (1.0, "1x"),
     (2.0, "2x"),
@@ -88,6 +92,11 @@ pub struct PreviewZoomOption {
     pub factor: f64,
 }
 
+#[derive(Clone)]
+struct PreviewCapabilities {
+    resolutions: Vec<ResolutionOption>,
+}
+
 fn format_resolution_label(width: u32, height: u32) -> String {
     format!("{width} x {height}")
 }
@@ -98,10 +107,6 @@ fn resolution_option(width: u32, height: u32) -> ResolutionOption {
         width,
         height,
     }
-}
-
-fn derived_preview_zoom_options() -> Vec<PreviewZoomOption> {
-    derive_preview_zoom_options_from(preview_resolution_options())
 }
 
 fn derive_preview_zoom_options_from(options: &[ResolutionOption]) -> Vec<PreviewZoomOption> {
@@ -131,93 +136,17 @@ fn fallback_preview_resolution_options() -> Vec<ResolutionOption> {
     vec![resolution_option(1920, 1092), resolution_option(1280, 720)]
 }
 
-fn simple_tuning_file_candidates() -> Vec<PathBuf> {
-    let mut candidates = vec![
-        PathBuf::from(SYSTEM_TUNING_PATH),
-        home_dir().join(LOCAL_TUNING_PATH_RELATIVE),
-    ];
-
-    if let Ok(current_dir) = env::current_dir() {
-        candidates.push(current_dir.join(DEV_TUNING_PATH_RELATIVE));
-    }
-
-    if let Ok(executable) = env::current_exe() {
-        if let Some(target_dir) = executable.parent().and_then(Path::parent) {
-            candidates.push(target_dir.join(DEV_TUNING_PATH_RELATIVE));
-        }
-    }
-
-    candidates.push(Path::new(env!("CARGO_MANIFEST_DIR")).join(DEV_TUNING_PATH_RELATIVE));
-    candidates
-}
-
-fn simple_tuning_file_path() -> Option<PathBuf> {
-    simple_tuning_file_candidates()
+fn sorted_resolution_dimensions(
+    discrete_sizes: impl IntoIterator<Item = (u32, u32)>,
+    range_max: Option<(u32, u32)>,
+) -> Vec<(u32, u32)> {
+    let mut sizes: Vec<(u32, u32)> = discrete_sizes
         .into_iter()
-        .find(|candidate| candidate.is_file())
-}
-
-fn apply_simple_tuning_env() {
-    if env::var_os(LIBCAMERA_SIMPLE_TUNING_ENV)
-        .filter(|value| !value.is_empty())
-        .is_some()
-    {
-        return;
-    }
-
-    if let Some(path) = simple_tuning_file_path() {
-        unsafe {
-            env::set_var(LIBCAMERA_SIMPLE_TUNING_ENV, path);
-        }
-    }
-}
-
-fn detected_preview_resolution_options() -> Result<Vec<ResolutionOption>, String> {
-    apply_simple_tuning_env();
-    let manager = CameraManager::new()
-        .map_err(|error| {
-            trf(
-                "Falha ao inicializar libcamera para listar resoluções: {error}",
-                &[("error", error.to_string())],
-            )
-        })?;
-    let camera_id = manager
-        .cameras()
-        .iter()
-        .next()
-        .map(|camera| camera.id().to_string())
-        .ok_or_else(|| tr("Nenhuma câmera disponível para listar resoluções."))?;
-    let camera_ref = manager
-        .get(&camera_id)
-        .ok_or_else(|| {
-            trf(
-                "Câmera {camera_id} não ficou acessível para listar resoluções.",
-                &[("camera_id", camera_id.clone())],
-            )
-        })?;
-    let camera = camera_ref
-        .acquire()
-        .map_err(|error| {
-            trf(
-                "Falha ao adquirir a câmera para listar resoluções: {error}",
-                &[("error", error.to_string())],
-            )
-        })?;
-    let configuration = camera
-        .generate_configuration(&[StreamRole::ViewFinder])
-        .ok_or_else(|| tr("Não foi possível gerar a configuração base para listar resoluções."))?;
-    let stream_cfg = configuration
-        .get(0)
-        .ok_or_else(|| tr("A configuração da câmera não retornou stream para listar resoluções."))?;
-    let pixel_format = PixelFormat::parse("XBGR8888")
-        .ok_or_else(|| tr("XBGR8888 não está disponível para listar resoluções."))?;
-
-    let mut sizes: Vec<(u32, u32)> = stream_cfg
-        .formats()
-        .sizes(pixel_format)
-        .into_iter()
-        .map(|size| (size.width, size.height))
+        .filter(|(width, height)| *width > 0 && *height > 0)
         .collect();
+    if let Some((width, height)) = range_max.filter(|(width, height)| *width > 0 && *height > 0) {
+        sizes.push((width, height));
+    }
     sizes.sort_unstable_by(|left, right| {
         let left_area = left.0 as u64 * left.1 as u64;
         let right_area = right.0 as u64 * right.1 as u64;
@@ -227,30 +156,75 @@ fn detected_preview_resolution_options() -> Result<Vec<ResolutionOption>, String
             .then_with(|| right.1.cmp(&left.1))
     });
     sizes.dedup();
+    sizes
+}
 
-    if sizes.is_empty() {
-        return Err(tr("O libcamera não retornou resoluções válidas para o preview."));
+fn preferred_camera_id_from(cameras: &[(String, String)]) -> Option<String> {
+    cameras
+        .iter()
+        .find(|(id, model)| {
+            id.to_ascii_lowercase().contains("ov02c10")
+                || model.to_ascii_lowercase().contains("ov02c10")
+        })
+        .or_else(|| cameras.first())
+        .map(|(id, _)| id.clone())
+}
+
+pub(crate) fn preferred_camera_id(manager: &CameraManager) -> Option<String> {
+    let cameras = manager.cameras();
+    if cameras.is_empty() {
+        return None;
     }
+    let cameras = cameras
+        .iter()
+        .map(|camera| {
+            let model = camera
+                .properties()
+                .get::<Model>()
+                .map(|model| model.0)
+                .unwrap_or_default();
+            (camera.id().to_string(), model)
+        })
+        .collect::<Vec<_>>();
+    preferred_camera_id_from(&cameras)
+}
 
-    Ok(sizes
+fn preview_capabilities() -> &'static RwLock<PreviewCapabilities> {
+    PREVIEW_CAPABILITIES.get_or_init(|| {
+        RwLock::new(PreviewCapabilities {
+            resolutions: fallback_preview_resolution_options(),
+        })
+    })
+}
+
+pub(crate) fn refresh_preview_capabilities(
+    discrete_sizes: impl IntoIterator<Item = (u32, u32)>,
+    range_max: Option<(u32, u32)>,
+) -> Result<(), String> {
+    let resolutions = sorted_resolution_dimensions(discrete_sizes, range_max)
         .into_iter()
         .map(|(width, height)| resolution_option(width, height))
-        .collect())
+        .collect::<Vec<_>>();
+    if resolutions.is_empty() {
+        return Err(tr("O libcamera não retornou resoluções válidas para o preview."));
+    }
+    let mut capabilities = preview_capabilities()
+        .write()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    capabilities.resolutions = resolutions;
+    Ok(())
 }
 
-pub fn preview_resolution_options() -> &'static [ResolutionOption] {
-    PREVIEW_RESOLUTION_OPTIONS
-        .get_or_init(|| {
-            detected_preview_resolution_options()
-                .unwrap_or_else(|_| fallback_preview_resolution_options())
-        })
-        .as_slice()
+pub fn preview_resolution_options() -> Vec<ResolutionOption> {
+    preview_capabilities()
+        .read()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .resolutions
+        .clone()
 }
 
-pub fn preview_zoom_options() -> &'static [PreviewZoomOption] {
-    PREVIEW_ZOOM_OPTIONS
-        .get_or_init(derived_preview_zoom_options)
-        .as_slice()
+pub fn preview_zoom_options() -> Vec<PreviewZoomOption> {
+    derive_preview_zoom_options_from(&preview_resolution_options())
 }
 
 #[derive(Clone)]
@@ -260,20 +234,48 @@ pub struct OwnedFrame {
     pub data: Vec<u8>,
 }
 
+fn validate_strided_rgba_layout(
+    width: usize,
+    height: usize,
+    stride: usize,
+    source_len: usize,
+) -> Result<(usize, usize, usize), String> {
+    if width == 0 || height == 0 {
+        return Err(tr("Frame inválido: dados insuficientes para a resolução atual."));
+    }
+
+    let row_bytes = width
+        .checked_mul(4)
+        .ok_or_else(|| tr("Frame inválido: overflow ao calcular o tamanho do buffer."))?;
+    if stride < row_bytes {
+        return Err(tr("Frame inválido: dados insuficientes para a resolução atual."));
+    }
+
+    let last_row_offset = (height - 1)
+        .checked_mul(stride)
+        .ok_or_else(|| tr("Frame inválido: overflow ao calcular o tamanho do buffer."))?;
+    let required = last_row_offset
+        .checked_add(row_bytes)
+        .ok_or_else(|| tr("Frame inválido: overflow ao calcular o tamanho do buffer."))?;
+    if source_len < required {
+        return Err(tr("Frame inválido: dados insuficientes para a resolução atual."));
+    }
+
+    let packed_len = row_bytes
+        .checked_mul(height)
+        .ok_or_else(|| tr("Frame inválido: overflow ao calcular o tamanho do buffer."))?;
+    Ok((row_bytes, required, packed_len))
+}
+
 impl OwnedFrame {
     fn from_strided_rgba(width: usize, height: usize, stride: usize, source: &[u8]) -> Result<Self, String> {
-        let row_bytes = width.saturating_mul(4);
-        let required = stride
-            .checked_mul(height)
-            .ok_or_else(|| tr("Frame invalido: overflow ao calcular o tamanho do buffer."))?;
-        if source.len() < required || row_bytes == 0 {
-            return Err(tr("Frame invalido: dados insuficientes para a resolucao atual."));
-        }
+        let (row_bytes, required, packed_len) =
+            validate_strided_rgba_layout(width, height, stride, source.len())?;
 
         let mut data = if stride == row_bytes {
             source[..required].to_vec()
         } else {
-            let mut packed = vec![0_u8; row_bytes * height];
+            let mut packed = vec![0_u8; packed_len];
             for row in 0..height {
                 let src_start = row * stride;
                 let src_end = src_start + row_bytes;
@@ -303,15 +305,18 @@ impl OwnedFrame {
             return Self::from_strided_rgba(source_width, source_height, stride, source);
         }
 
-        let row_bytes = source_width.saturating_mul(4);
-        let required = stride
-            .checked_mul(source_height)
-            .ok_or_else(|| tr("Frame invalido: overflow ao calcular o tamanho do buffer."))?;
-        if source.len() < required || row_bytes == 0 || target_width == 0 || target_height == 0 {
-            return Err(tr("Frame invalido: dados insuficientes para a resolucao atual."));
+        validate_strided_rgba_layout(source_width, source_height, stride, source.len())?;
+        if target_width == 0 || target_height == 0 {
+            return Err(tr("Frame inválido: dados insuficientes para a resolução atual."));
         }
+        let target_pixels = target_width
+            .checked_mul(target_height)
+            .ok_or_else(|| tr("Frame inválido: overflow ao calcular o tamanho do buffer."))?;
+        let target_len = target_pixels
+            .checked_mul(4)
+            .ok_or_else(|| tr("Frame inválido: overflow ao calcular o tamanho do buffer."))?;
 
-        let mut data = vec![0_u8; target_width * target_height * 4];
+        let mut data = vec![0_u8; target_len];
         for target_y in 0..target_height {
             let source_y = target_y * source_height / target_height;
             let source_row_start = source_y * stride;
@@ -371,11 +376,19 @@ fn preview_dimensions(width: usize, height: usize) -> (usize, usize) {
     (scaled_width, scaled_height)
 }
 
-pub fn set_softisp_env(mode: &str) {
+pub fn normalize_softisp_mode(mode: &str) -> String {
+    match mode.trim().to_ascii_lowercase().as_str() {
+        "gpu" => "gpu".to_string(),
+        _ => "cpu".to_string(),
+    }
+}
+
+/// Configure libcamera before GTK, the camera worker, or any other threads start.
+pub fn configure_libcamera_environment(mode: &str) {
+    let mode = normalize_softisp_mode(mode);
     unsafe {
         std::env::set_var("LIBCAMERA_SOFTISP_MODE", mode);
     }
-    apply_simple_tuning_env();
 }
 
 pub fn normalize_countdown_seconds(value: u32) -> u32 {
@@ -408,33 +421,109 @@ fn synthetic_smoke_frame() -> OwnedFrame {
     OwnedFrame { width, height, data }
 }
 
-pub fn run_smoke_test(config_path: &Path) -> Result<(), String> {
+fn require_camera_count(cameras_count: usize) -> Result<(), String> {
+    if cameras_count == 0 {
+        Err(tr("Nenhuma câmera disponível para o teste físico."))
+    } else {
+        Ok(())
+    }
+}
+
+struct SmokeArtifacts {
+    directory: PathBuf,
+}
+
+impl SmokeArtifacts {
+    fn create(test_name: &str) -> Result<Self, String> {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|error| error.to_string())?
+            .as_nanos();
+        let base = env::temp_dir();
+
+        for attempt in 0_u8..32 {
+            let directory = base.join(format!(
+                "galaxybook-camera-{test_name}-{}-{timestamp}-{attempt}",
+                std::process::id(),
+            ));
+            let mut builder = fs::DirBuilder::new();
+            #[cfg(unix)]
+            builder.mode(0o700);
+            match builder.create(&directory) {
+                Ok(()) => return Ok(Self { directory }),
+                Err(error) if error.kind() == ErrorKind::AlreadyExists => continue,
+                Err(error) => return Err(error.to_string()),
+            }
+        }
+
+        Err(tr("Não foi possível criar diretório temporário exclusivo para o teste."))
+    }
+
+    fn photo_path(&self) -> PathBuf {
+        self.directory.join("photo.jpg")
+    }
+
+    fn video_path(&self) -> PathBuf {
+        self.directory.join("video.mp4")
+    }
+}
+
+impl Drop for SmokeArtifacts {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.directory);
+    }
+}
+
+pub fn run_self_test(config_path: &Path) -> Result<(), String> {
     let config = CameraConfig::load(config_path);
-    set_softisp_env(&config.softisp_mode);
-    let cameras_count = CameraManager::new()
-        .map_err(|error| {
-            trf(
-                "Falha ao inicializar libcamera no smoke test: {error}",
-                &[("error", error.to_string())],
-            )
-        })?
-        .cameras()
-        .iter()
-        .count();
-    let photo_path = Path::new("/tmp/galaxybook-camera-smoke-test.jpg");
-    let video_path = Path::new("/tmp/galaxybook-camera-smoke-test.mp4");
+    let artifacts = SmokeArtifacts::create("self-test")?;
+    let photo_path = artifacts.photo_path();
+    let video_path = artifacts.video_path();
     let mut frame = synthetic_smoke_frame();
     let profile = AdjustmentProfile::new(&config);
     apply_adjustments(&mut frame, &profile);
 
-    println!("config={}", config_path.display());
-    println!("cameras={cameras_count}");
-    println!("resolution={}", config.resolution_text());
-    println!("photo={}", photo_path.display());
-    println!("video={}", video_path.display());
+    write_photo_from_frame(&frame, &photo_path)?;
+    write_smoke_video(&frame, &video_path)?;
 
-    write_photo_from_frame(&frame, photo_path)?;
-    write_smoke_video(&frame, video_path)?;
+    println!("config={}", config_path.display());
+    println!("source=synthetic");
+    println!("resolution={}", config.resolution_text());
+    println!("photo=verified");
+    println!("video=verified");
+    Ok(())
+}
+
+pub fn run_smoke_test(config_path: &Path) -> Result<(), String> {
+    let config = CameraConfig::load(config_path);
+    let manager = CameraManager::new().map_err(|error| {
+        trf(
+            "Falha ao inicializar libcamera no teste físico: {error}",
+            &[("error", error.to_string())],
+        )
+    })?;
+    let cameras_count = manager.cameras().iter().count();
+    require_camera_count(cameras_count)?;
+
+    let artifacts = SmokeArtifacts::create("smoke-test")?;
+    let photo_path = artifacts.photo_path();
+    let video_path = artifacts.video_path();
+    let mut frame = capture_still_frame_with_manager(
+        &manager,
+        0,
+        std::time::Duration::from_secs(8),
+    )?;
+    let profile = AdjustmentProfile::new(&config);
+    apply_adjustments(&mut frame, &profile);
+    write_photo_from_frame(&frame, &photo_path)?;
+    write_smoke_video(&frame, &video_path)?;
+
+    println!("config={}", config_path.display());
+    println!("source=hardware");
+    println!("cameras={cameras_count}");
+    println!("captured={}x{}", frame.width, frame.height);
+    println!("photo=verified");
+    println!("video=verified");
     Ok(())
 }
 
@@ -606,6 +695,54 @@ mod tests {
     }
 
     #[test]
+    fn strided_rgba_rejects_zero_dimensions() {
+        assert!(OwnedFrame::from_strided_rgba(0, 1, 4, &[]).is_err());
+        assert!(OwnedFrame::from_strided_rgba(1, 0, 4, &[]).is_err());
+        assert!(OwnedFrame::from_strided_rgba_scaled(0, 1, 4, &[], 1, 1).is_err());
+        assert!(OwnedFrame::from_strided_rgba_scaled(1, 1, 4, &[0; 4], 0, 1).is_err());
+        assert!(OwnedFrame::from_strided_rgba_scaled(1, 1, 4, &[0; 4], 1, 0).is_err());
+    }
+
+    #[test]
+    fn strided_rgba_rejects_stride_shorter_than_a_pixel_row() {
+        let source = [0_u8; 16];
+        assert!(OwnedFrame::from_strided_rgba(2, 2, 7, &source).is_err());
+        assert!(OwnedFrame::from_strided_rgba_scaled(2, 2, 7, &source, 1, 1).is_err());
+    }
+
+    #[test]
+    fn strided_rgba_rejects_overflow_and_short_buffers() {
+        assert!(OwnedFrame::from_strided_rgba(usize::MAX, 1, usize::MAX, &[]).is_err());
+        assert!(OwnedFrame::from_strided_rgba(1, usize::MAX, 4, &[]).is_err());
+        assert!(
+            OwnedFrame::from_strided_rgba_scaled(1, 1, 4, &[0; 4], usize::MAX, 2).is_err()
+        );
+
+        let short_source = [0_u8; 19];
+        assert!(OwnedFrame::from_strided_rgba(2, 2, 12, &short_source).is_err());
+        assert!(OwnedFrame::from_strided_rgba_scaled(2, 2, 12, &short_source, 1, 2).is_err());
+    }
+
+    #[test]
+    fn strided_rgba_accepts_minimum_buffer_with_row_padding() {
+        let source = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        ];
+
+        let packed = OwnedFrame::from_strided_rgba(2, 2, 12, &source).expect("valid padded frame");
+        assert_eq!(packed.width, 2);
+        assert_eq!(packed.height, 2);
+        assert_eq!(
+            packed.data,
+            vec![1, 2, 3, 255, 5, 6, 7, 255, 13, 14, 15, 255, 17, 18, 19, 255]
+        );
+
+        let scaled = OwnedFrame::from_strided_rgba_scaled(2, 2, 12, &source, 1, 2)
+            .expect("valid padded scaled frame");
+        assert_eq!(scaled.data, vec![1, 2, 3, 255, 13, 14, 15, 255]);
+    }
+
+    #[test]
     fn localized_app_name_uses_portuguese_camera_word() {
         assert_eq!(
             localized_app_name_for_locale("pt_BR.UTF-8"),
@@ -680,5 +817,79 @@ mod tests {
     fn ov02c10_simple_tuning_file_is_shipped_with_project() {
         let tuning_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(DEV_TUNING_PATH_RELATIVE);
         assert!(tuning_path.is_file(), "missing tuning file: {}", tuning_path.display());
+        assert_eq!(
+            Path::new(SYSTEM_TUNING_PATH),
+            Path::new("/usr/share/libcamera/ipa/simple/ov02c10.yaml")
+        );
+        assert_eq!(
+            Path::new(SYSTEM_TUNING_PATH).file_name(),
+            Some(std::ffi::OsStr::new("ov02c10.yaml"))
+        );
+        assert!(include_str!("../packaging/fedora/galaxybook-camera.spec")
+            .contains("%{_datadir}/libcamera/ipa/simple/ov02c10.yaml"));
+    }
+
+    #[test]
+    fn softisp_mode_accepts_only_cpu_or_gpu() {
+        assert_eq!(normalize_softisp_mode("cpu"), "cpu");
+        assert_eq!(normalize_softisp_mode(" GPU "), "gpu");
+        assert_eq!(normalize_softisp_mode("invalid"), "cpu");
+        assert_eq!(normalize_softisp_mode("cpu\nINJECTED=1"), "cpu");
+    }
+
+    #[test]
+    fn preferred_camera_uses_ov02c10_model_or_id() {
+        let cameras = vec![
+            ("front-generic".to_string(), "generic".to_string()),
+            ("sensor-two".to_string(), "ov02c10".to_string()),
+        ];
+        assert_eq!(
+            preferred_camera_id_from(&cameras).as_deref(),
+            Some("sensor-two")
+        );
+
+        let cameras_without_model = vec![
+            ("front-generic".to_string(), String::new()),
+            ("platform-OV02C10:00".to_string(), String::new()),
+        ];
+        assert_eq!(
+            preferred_camera_id_from(&cameras_without_model).as_deref(),
+            Some("platform-OV02C10:00")
+        );
+    }
+
+    #[test]
+    fn range_max_is_included_and_sorted_before_discrete_sizes() {
+        let sizes = sorted_resolution_dimensions(
+            [(1280, 720), (1920, 1080), (1920, 1080)],
+            Some((1920, 1092)),
+        );
+        assert_eq!(sizes, vec![(1920, 1092), (1920, 1080), (1280, 720)]);
+    }
+
+    #[test]
+    fn hardware_smoke_requires_at_least_one_camera() {
+        assert!(require_camera_count(0).is_err());
+        assert!(require_camera_count(1).is_ok());
+    }
+
+    #[test]
+    fn smoke_artifact_directory_is_unique_and_removed_on_drop() {
+        let directory = {
+            let artifacts = SmokeArtifacts::create("unit-test").expect("temporary artifacts");
+            assert!(artifacts.directory.is_dir());
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+
+                let mode = fs::metadata(&artifacts.directory)
+                    .expect("temporary directory metadata")
+                    .permissions()
+                    .mode();
+                assert_eq!(mode & 0o777, 0o700);
+            }
+            artifacts.directory.clone()
+        };
+        assert!(!directory.exists());
     }
 }

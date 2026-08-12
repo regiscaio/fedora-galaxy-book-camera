@@ -17,7 +17,7 @@ impl CameraWindow {
 
         {
             let mut state = self.state.borrow_mut();
-            state.preview_active = true;
+            state.preview_requested = true;
             state.post_stop_status = None;
         }
         let _ = self.command_tx.send(WorkerCommand::StartPreview);
@@ -74,16 +74,16 @@ impl CameraWindow {
         }
 
         let config = self.state.borrow().config.clone();
-        let preview_active = self.state.borrow().preview_active;
+        let preview_requested = self.state.borrow().preview_requested;
 
         if restart_required {
             self.state.borrow_mut().restart_pending = false;
             let _ = self.command_tx.send(WorkerCommand::ApplyConfig {
                 config,
-                restart: preview_active,
+                restart: preview_requested,
             });
 
-            if preview_active {
+            if preview_requested {
                 self.set_status(
                     &tr("Reiniciando o preview para aplicar a nova resolução ou preset..."),
                     false,

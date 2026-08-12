@@ -9,18 +9,15 @@ readonly MAKE_CMD="${MAKE:-make}"
 readonly APP_BINARY="${REPO_ROOT}/target/release/galaxybook-camera"
 readonly ICON_SOURCE="${REPO_ROOT}/assets/galaxybook-camera.svg"
 readonly COUNTDOWN_ICON_SOURCE="${REPO_ROOT}/assets/camera-timer-symbolic.svg"
-readonly TUNING_SOURCE="${REPO_ROOT}/data/libcamera/simple/ov02c10.yaml"
 readonly DESKTOP_SOURCE="${REPO_ROOT}/data/${APP_ID}.desktop"
 readonly LOCAL_BIN_DIR="${HOME}/.local/bin"
 readonly LOCAL_APPS_DIR="${HOME}/.local/share/applications"
 readonly LOCAL_ICON_DIR="${HOME}/.local/share/icons/hicolor/scalable/apps"
 readonly LOCAL_ACTION_ICON_DIR="${HOME}/.local/share/icons/hicolor/scalable/actions"
-readonly LOCAL_TUNING_DIR="${HOME}/.local/share/galaxybook-camera/libcamera/simple"
 readonly WRAPPER_PATH="${LOCAL_BIN_DIR}/galaxybook-camera"
 readonly DESKTOP_ENTRY_PATH="${LOCAL_APPS_DIR}/${APP_ID}.desktop"
 readonly ICON_TARGET_PATH="${LOCAL_ICON_DIR}/${APP_ID}.svg"
 readonly COUNTDOWN_ICON_TARGET_PATH="${LOCAL_ACTION_ICON_DIR}/camera-timer-symbolic.svg"
-readonly TUNING_TARGET_PATH="${LOCAL_TUNING_DIR}/ov02c10.yaml"
 
 require_cmd() {
 	command -v "$1" >/dev/null 2>&1 || {
@@ -48,7 +45,7 @@ main() {
 	fi
 
 	mkdir -p "${LOCAL_BIN_DIR}" "${LOCAL_APPS_DIR}"
-	mkdir -p "${LOCAL_ICON_DIR}" "${LOCAL_ACTION_ICON_DIR}" "${LOCAL_TUNING_DIR}"
+	mkdir -p "${LOCAL_ICON_DIR}" "${LOCAL_ACTION_ICON_DIR}"
 
 	if [[ ! -f "${ICON_SOURCE}" ]]; then
 		echo "Camera icon not found: ${ICON_SOURCE}" >&2
@@ -58,10 +55,6 @@ main() {
 		echo "Countdown icon not found: ${COUNTDOWN_ICON_SOURCE}" >&2
 		exit 1
 	fi
-	if [[ ! -f "${TUNING_SOURCE}" ]]; then
-		echo "OV02C10 tuning file not found: ${TUNING_SOURCE}" >&2
-		exit 1
-	fi
 	if [[ ! -f "${DESKTOP_SOURCE}" ]]; then
 		echo "Desktop entry source not found: ${DESKTOP_SOURCE}" >&2
 		exit 1
@@ -69,7 +62,6 @@ main() {
 
 	install -m 0644 "${ICON_SOURCE}" "${ICON_TARGET_PATH}"
 	install -m 0644 "${COUNTDOWN_ICON_SOURCE}" "${COUNTDOWN_ICON_TARGET_PATH}"
-	install -m 0644 "${TUNING_SOURCE}" "${TUNING_TARGET_PATH}"
 
 cat >"${WRAPPER_PATH}" <<EOF
 #!/usr/bin/env bash
@@ -126,8 +118,6 @@ EOF
 	echo "  ${ICON_TARGET_PATH}"
 	echo "Action icon:"
 	echo "  ${COUNTDOWN_ICON_TARGET_PATH}"
-	echo "OV02C10 tuning:"
-	echo "  ${TUNING_TARGET_PATH}"
 	if [[ -d "$(desktop_dir)" ]]; then
 		echo "Desktop shortcut:"
 		echo "  ${desktop_shortcut}"

@@ -94,9 +94,10 @@ pub fn refresh_zoom_selector(
     zoom_option_buttons: &[gtk::ToggleButton],
     syncing_ui: &Cell<bool>,
 ) {
-    let selected_option = preview_zoom_options()
+    let options = preview_zoom_options();
+    let selected_option = options
         .get(selected_index)
-        .or_else(|| preview_zoom_options().first());
+        .or_else(|| options.first());
     let selected_label = selected_option.map(|option| option.label.as_str()).unwrap_or("1x");
 
     zoom_label.set_label(selected_label);
