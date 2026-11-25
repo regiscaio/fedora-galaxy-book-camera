@@ -183,9 +183,9 @@ Current behavior:
 - the camera is opened directly through `libcamera`, without relying on Snapshot;
 - the RPM installs the sensor tuning at
   `/usr/share/libcamera/ipa/simple/ov02c10.yaml`, the global simple IPA path;
-- if the camera is not registered when the app opens, preview re-enumerates it
-  with backoff capped at `5s`; **Stop preview** cancels the wait immediately
-  and a new start restarts the cycle;
+- if libcamera finds no cameras, preview retries at intervals of up to 5 seconds.
+  **Stop preview** interrupts the wait immediately. If the problem persists,
+  check the sensor and driver in Galaxy Book Setup;
 - the `Natural` preset and the default baseline use a light calibration that
   moves color closer to the system webcam path without giving up direct
   `libcamera` detail;

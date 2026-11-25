@@ -193,9 +193,9 @@ Comportamento atual:
 - o RPM instala o tuning do sensor em
   `/usr/share/libcamera/ipa/simple/ov02c10.yaml`, no caminho global do `simple
   IPA`;
-- se a câmera ainda não estiver registrada quando o app abrir, o preview faz
-  reenumerações com backoff limitado a `5s`; **Parar preview** cancela
-  imediatamente a espera e uma nova tentativa reinicia o ciclo;
+- se o libcamera não encontrar câmeras, o preview tenta novamente em intervalos
+  de até 5 segundos. **Parar preview** interrompe a espera imediatamente. Se o
+  problema persistir, verifique o sensor e o driver no Galaxy Book Setup;
 - o preset `Natural` e o baseline padrão usam um ajuste leve e calibrado para
   aproximar a cor do caminho de webcam do sistema sem perder o detalhe do
   `libcamera` direto;

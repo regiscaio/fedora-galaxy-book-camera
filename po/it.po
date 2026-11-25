@@ -302,8 +302,8 @@ msgstr ""
 "{delay_ms} ms."
 
 #: src/camera/worker.rs:855
-msgid "Nenhuma câmera disponível no libcamera."
-msgstr "Nessuna fotocamera disponibile in libcamera."
+msgid "O libcamera não encontrou câmeras. Se o problema persistir, verifique o sensor e o driver no Galaxy Book Setup."
+msgstr "Libcamera non ha trovato fotocamere. Se il problema persiste, verifica il sensore e il driver in Galaxy Book Setup."
 
 #: src/camera/worker.rs:861
 #, rust-format

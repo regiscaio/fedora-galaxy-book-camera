@@ -44,7 +44,6 @@ use crate::{
 const RECORDING_DROP_STATUS_INTERVAL: u32 = PREVIEW_FRAMERATE * 2;
 const RETRY_DELAYS_MS: [u64; 6] = [200, 400, 800, 1_600, 3_000, 5_000];
 const MANAGER_RECREATE_AFTER_FAILURES: usize = 12;
-const IDLE_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const FRAME_STALL_TIMEOUT: Duration = Duration::from_secs(3);
 const CONSECUTIVE_FRAME_ERROR_LIMIT: u8 = 3;
 
@@ -159,11 +158,8 @@ impl RetryBackoff {
     }
 
     fn wait_timeout(&self) -> Option<Duration> {
-        self.next_attempt.map(|next_attempt| {
-            next_attempt
-                .saturating_duration_since(Instant::now())
-                .min(IDLE_POLL_INTERVAL)
-        })
+        self.next_attempt
+            .map(|next_attempt| next_attempt.saturating_duration_since(Instant::now()))
     }
 }
 
@@ -448,30 +444,21 @@ fn run_camera_manager_loop<'a>(
         }
 
         let Some(active_session) = session.as_mut() else {
-            let command = match retry.wait_timeout() {
-                Some(timeout) => match command_rx.recv_timeout(timeout) {
-                    Ok(command) => Some(command),
-                    Err(RecvTimeoutError::Timeout) => None,
-                    Err(RecvTimeoutError::Disconnected) => {
-                        return ManagerLoopExit::Shutdown
+            match wait_for_manager_command(command_rx, retry) {
+                ManagerCommandWait::Command(command) => {
+                    if handle_manager_command(
+                        command,
+                        manager,
+                        state,
+                        &mut session,
+                        retry,
+                        event_tx,
+                    ) {
+                        return ManagerLoopExit::Shutdown;
                     }
-                },
-                None => match command_rx.recv() {
-                    Ok(command) => Some(command),
-                    Err(_) => return ManagerLoopExit::Shutdown,
-                },
-            };
-            if let Some(command) = command {
-                if handle_manager_command(
-                    command,
-                    manager,
-                    state,
-                    &mut session,
-                    retry,
-                    event_tx,
-                ) {
-                    return ManagerLoopExit::Shutdown;
                 }
+                ManagerCommandWait::Timeout => {}
+                ManagerCommandWait::Disconnected => return ManagerLoopExit::Shutdown,
             }
             continue;
         };
@@ -852,7 +839,9 @@ fn start_preview_session<'a>(
     config: &CameraConfig,
 ) -> Result<PreviewSession<'a>, PreviewStartError> {
     let camera_id = preferred_camera_id(manager)
-        .ok_or_else(|| PreviewStartError::Transient(tr("Nenhuma câmera disponível no libcamera.")))?;
+        .ok_or_else(|| {
+            PreviewStartError::Transient(tr("O libcamera não encontrou câmeras. Se o problema persistir, verifique o sensor e o driver no Galaxy Book Setup."))
+        })?;
     let camera_ref = manager
         .get(&camera_id)
         .ok_or_else(|| PreviewStartError::Transient(trf("Câmera {camera_id} não ficou acessível pelo CameraManager.", &[("camera_id", camera_id.clone())])))?;
@@ -1107,6 +1096,26 @@ mod tests {
         assert_eq!(capped.delay, Duration::from_millis(5_000));
         assert!(!capped.should_report);
         assert!(retry.wait_timeout().is_some());
+    }
+
+    #[test]
+    fn pending_retry_waits_until_its_deadline_but_accepts_commands() {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let retry = RetryBackoff {
+            next_attempt: Some(deadline),
+            ..Default::default()
+        };
+        let before = Instant::now();
+        let timeout = retry.wait_timeout().unwrap();
+        assert!(timeout <= deadline.saturating_duration_since(before));
+        assert!(timeout >= deadline.saturating_duration_since(Instant::now()));
+
+        let (command_tx, command_rx) = mpsc::channel();
+        command_tx.send(WorkerCommand::StopPreview).unwrap();
+        assert!(matches!(
+            wait_for_manager_command(&command_rx, &retry),
+            ManagerCommandWait::Command(WorkerCommand::StopPreview)
+        ));
     }
 
     #[test]
